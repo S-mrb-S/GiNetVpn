@@ -1,23 +1,24 @@
 package com.gold.hamrahvpn;
 
+import static com.gold.hamrahvpn.util.SafeParcelable.NULL;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
+import android.view.animation.OvershootInterpolator;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -26,6 +27,8 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.gold.hamrahvpn.openvpn.EncryptData;
+import com.gold.hamrahvpn.recyclerview.MainAdapter;
+import com.gold.hamrahvpn.util.FinishActivityListener;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -34,62 +37,44 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-import de.blinkt.openvpn.core.App;
 import de.blinkt.openvpn.core.ProfileManager;
-import jp.wasabeef.recyclerview.animators.BaseItemAnimator;
-import jp.wasabeef.recyclerview.animators.ScaleInBottomAnimator;
+import jp.wasabeef.recyclerview.adapters.AlphaInAnimationAdapter;
+import jp.wasabeef.recyclerview.adapters.AnimationAdapter;
+import jp.wasabeef.recyclerview.animators.FadeInAnimator;
 
 //import static com.google.android.gms.common.internal.safeparcel.SafeParcelable.NULL;
 
-public class ServerActivity extends Activity {
-    ListView listView_light, listView_dark;
+public class ServerActivity extends Activity implements FinishActivityListener {
+    RecyclerView listView_light, listView_dark; // list
     ProfileManager pm;
     ImageView iv_server_refresh;
     String AppDetails = "NULL", FileDetails = "NULL";
 
     String[][] ServerArray = new String[40][8];
-    String[][] FileArray = new String[40][2];
+    public static String[][] FileArray = new String[40][2];
 
-    String DarkMode = "false";
+    public static String DarkMode = "false";
 
     public static final String KEY_GRID = "GRID";
-
-    private boolean enabledGrid = false;
-
-    enum Type {
-        ScaleInBottom(new ScaleInBottomAnimator());
-
-        BaseItemAnimator animator;
-
-        Type(BaseItemAnimator animator) {
-            this.animator = animator;
-        }
-    }
-
-//    private FirebaseAnalytics mFirebaseAnalytics;
 
     // 100
     @Override
     public void onBackPressed() {
-        finish();
-        overridePendingTransition(R.anim.anim_slide_in_left, R.anim.anim_slide_out_right);
+        finishActivity();
     }
-
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_servers);
 
-//        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
-
         pm = ProfileManager.getInstance(ServerActivity.this);
 
         iv_server_refresh = findViewById(R.id.iv_server_refresh);
 
-//        EncryptData En = new EncryptData();
-//        SharedPreferences AppValues = getSharedPreferences("app_values", 0);
-//        String AppDetails = En.decrypt(AppValues.getString("app_details", NULL));
+        EncryptData En = new EncryptData();
+        SharedPreferences AppValues = getSharedPreferences("app_values", 0);
+        String AppDetails = En.decrypt(AppValues.getString("app_details", NULL));
 
         if (AppDetails.isEmpty()) {
             getConnectionString getConnectionString = new getConnectionString();
@@ -107,8 +92,7 @@ public class ServerActivity extends Activity {
         ll_server_back.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                finish();
-                overridePendingTransition(R.anim.anim_slide_in_left, R.anim.anim_slide_out_right);
+                finishActivity();
             }
         });
 
@@ -222,16 +206,16 @@ public class ServerActivity extends Activity {
     }
 
     class ServersList {
-        private CategoryArray adapter;
+        private MainAdapter adapter;
 
         ServersList() {
         }
 
         void Load() {
-//            EncryptData En = new EncryptData();
-//            SharedPreferences ConnectionDetails = getSharedPreferences("app_values", 0);
-//            AppDetails = En.decrypt(ConnectionDetails.getString("app_details", NULL));
-//            FileDetails = En.decrypt(ConnectionDetails.getString("file_details", NULL));
+            EncryptData En = new EncryptData();
+            SharedPreferences ConnectionDetails = getSharedPreferences("app_values", 0);
+            AppDetails = En.decrypt(ConnectionDetails.getString("app_details", NULL));
+            FileDetails = En.decrypt(ConnectionDetails.getString("file_details", NULL));
             int NumServers = 0;
             try {
                 JSONObject json_response = new JSONObject(AppDetails);
@@ -295,267 +279,139 @@ public class ServerActivity extends Activity {
 
             SharedPreferences SettingsDetails = getSharedPreferences("settings_data", 0);
             String DarkMode = SettingsDetails.getString("dark_mode", "false");
-            adapter = new CategoryArray(ServerList, ServerActivity.this);
+//            adapter = new MainAdapter(ServerList, ServerActivity.this);
+            RecyclerView recyclerView;
             if (DarkMode.equals("true")) {
-                listView_dark.setAdapter(adapter);
+//                listView_dark.setAdapter(adapter);
+                recyclerView = listView_dark;
                 listView_dark.setVisibility(View.VISIBLE);
                 listView_light.setVisibility(View.GONE);
             } else {
-                listView_light.setAdapter(adapter);
+//                listView_light.setAdapter(adapter);
+                recyclerView = listView_light;
                 listView_light.setVisibility(View.VISIBLE);
                 listView_dark.setVisibility(View.GONE);
             }
 
+            // new adapter
+            recyclerView.setLayoutManager(getLayoutManager());
+            recyclerView.setItemAnimator(new FadeInAnimator());
+
+//            Spinner spinner = findViewById(R.id.spinner);
+//            ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1);
+//            for (Type type : Type.values()) {
+//                spinnerAdapter.add(type.name());
+//            }
+//            spinner.setAdapter(spinnerAdapter);
+//            spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+//                @Override
+//                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+//                    AnimationAdapter animationAdapter = Type.values()[position].get(view.getContext());
+//                    animationAdapter.setFirstOnly(true);
+//                    animationAdapter.setDuration(500);
+//                    animationAdapter.setInterpolator(new OvershootInterpolator(0.5f));
+//                    recyclerView.setAdapter(animationAdapter);
+//                }
+//
+//                @Override
+//                public void onNothingSelected(AdapterView<?> parent) {
+//                    // no-op
+//                }
+//            });
+
+            AnimationAdapter defaultAdapter = new AlphaInAnimationAdapter(new MainAdapter(ServerActivity.this, ServerList, ServerActivity.this));
+            defaultAdapter.setFirstOnly(true);
+            defaultAdapter.setDuration(500);
+            defaultAdapter.setInterpolator(new OvershootInterpolator(0.5f));
+            recyclerView.setAdapter(defaultAdapter);
         }
     }
 
-    public class CategoryArray extends ArrayAdapter<Server> {
-
-        private List<Server> dataSet;
-        TextView tv_country;
-
-
-        private CategoryArray(List<Server> dataSet, Context mContext) {
-            super(mContext, R.layout.server_list_item, dataSet);
-            this.dataSet = dataSet;
-        }
-
-        @NonNull
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            View v = convertView;
-            if (v == null) {
-                LayoutInflater inflater = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                v = inflater.inflate(R.layout.server_list_item, null);
-            }
-
-            final Server Server = dataSet.get(position);
-
-            if (Server != null) {
-                tv_country = v.findViewById(R.id.tv_country);
-                ImageView iv_flag = v.findViewById(R.id.iv_flag);
-                ImageView iv_signal_strength = v.findViewById(R.id.iv_signal_strength);
-                final LinearLayout ll_item = v.findViewById(R.id.ll_item);
-
-                Typeface RobotoRegular = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Regular.ttf");
-
-                tv_country.setText(Server.GetCity());
-                tv_country.setTypeface(RobotoRegular);
-
-                if (DarkMode.equals("true")) {
-                    tv_country.setTextColor(getResources().getColor(R.color.colorDarkText));
-                } else {
-                    tv_country.setTextColor(getResources().getColor(R.color.colorLightText));
-
-                }
-
-
-                switch (Server.GetImage()) {
-                    case "japan":
-                        iv_flag.setImageResource(R.drawable.ic_flag_japan);
-                        break;
-                    case "russia":
-                        iv_flag.setImageResource(R.drawable.ic_flag_russia);
-                        break;
-                    case "southkorea":
-                        iv_flag.setImageResource(R.drawable.ic_flag_south_korea);
-                        break;
-                    case "thailand":
-                        iv_flag.setImageResource(R.drawable.ic_flag_thailand);
-                        break;
-                    case "vietnam":
-                        iv_flag.setImageResource(R.drawable.ic_flag_vietnam);
-                        break;
-                    case "unitedstates":
-                        iv_flag.setImageResource(R.drawable.ic_flag_united_states);
-                        break;
-                    case "unitedkingdom":
-                        iv_flag.setImageResource(R.drawable.ic_flag_united_kingdom);
-                        break;
-                    case "singapore":
-                        iv_flag.setImageResource(R.drawable.ic_flag_singapore);
-                        break;
-                    case "france":
-                        iv_flag.setImageResource(R.drawable.ic_flag_france);
-                        break;
-                    case "germany":
-                        iv_flag.setImageResource(R.drawable.ic_flag_germany);
-                        break;
-                    case "canada":
-                        iv_flag.setImageResource(R.drawable.ic_flag_canada);
-                        break;
-                    case "luxemburg":
-                        iv_flag.setImageResource(R.drawable.ic_flag_luxemburg);
-                        break;
-                    case "netherlands":
-                        iv_flag.setImageResource(R.drawable.ic_flag_netherlands);
-                        break;
-                    case "spain":
-                        iv_flag.setImageResource(R.drawable.ic_flag_spain);
-                        break;
-                    case "finland":
-                        iv_flag.setImageResource(R.drawable.ic_flag_finland);
-                        break;
-                    case "poland":
-                        iv_flag.setImageResource(R.drawable.ic_flag_poland);
-                        break;
-                    case "australia":
-                        iv_flag.setImageResource(R.drawable.ic_flag_australia);
-                        break;
-                    case "italy":
-                        iv_flag.setImageResource(R.drawable.ic_flag_italy);
-                        break;
-                    default:
-                        iv_flag.setImageResource(R.drawable.ic_flag_unknown_mali);
-                        break;
-                }
-
-
-                ll_item.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        ll_item.setBackgroundColor(getResources().getColor(R.color.colorSelectItem));
-                        tv_country.setTextColor(getResources().getColor(R.color.colorDarkText));
-                        EncryptData En = new EncryptData();
-                        try {
-                            SharedPreferences SharedAppDetails = getSharedPreferences("connection_data", 0);
-                            SharedPreferences.Editor Editor = SharedAppDetails.edit();
-                            Editor.putString("id", Server.GetID());
-                            Editor.putString("file_id", Server.GetFileID());
-                            Editor.putString("file", En.encrypt(FileArray[Integer.valueOf(Server.GetFileID())][1]));
-                            Editor.putString("city", Server.GetCity());
-                            Editor.putString("country", Server.GetCountry());
-                            Editor.putString("image", Server.GetImage());
-                            Editor.putString("ip", Server.GetIP());
-                            Editor.putString("active", Server.GetActive());
-                            Editor.putString("signal", Server.GetSignal());
-                            Editor.apply();
-                            App.hasFile = true;
-                            App.abortConnection = true;
-                        } catch (Exception e) {
-//                            Bundle params = new Bundle();
-//                            params.putString("device_id", App.device_id);
-//                            params.putString("exception", "SA6" + e.toString());
-//                            mFirebaseAnalytics.logEvent("app_param_error", params);
-                        }
-                        finish();
-                        overridePendingTransition(R.anim.anim_slide_in_left, R.anim.anim_slide_out_right);
-                    }
-                });
-
-
-                if (Server.GetSignal().equals(null)) {
-                    iv_signal_strength.setBackgroundResource(R.drawable.ic_signal_low);
-                } else {
-                    if (Server.GetSignal().equals("a")) {
-                        iv_signal_strength.setBackgroundResource(R.drawable.ic_signal_full);
-                    } else if (Server.GetSignal().equals("b")) {
-                        iv_signal_strength.setBackgroundResource(R.drawable.ic_signal_normal);
-                    } else if (Server.GetSignal().equals("c")) {
-                        iv_signal_strength.setBackgroundResource(R.drawable.ic_signal_medium);
-                    } else if (Server.GetSignal().equals("d")) {
-                        iv_signal_strength.setBackgroundResource(R.drawable.ic_signal_low);
-                    } else {
-                        iv_signal_strength.setBackgroundResource(R.drawable.ic_signal_low);
-                    }
-                }
-            } else {
-                TextView showBool = findViewById(R.id.boolShowListServer);
-                showBool.setVisibility(View.VISIBLE);
-            }
-
-            SharedPreferences ConnectionDetails = getSharedPreferences("connection_data", 0);
-            int ID = Integer.valueOf(ConnectionDetails.getString("id", "1"));
-
-            if (position == ID) {
-                v.setBackgroundColor(getResources().getColor(R.color.colorSelectItem));
-            } else {
-                if (DarkMode.equals("true")) {
-                    v.setBackgroundColor(getResources().getColor(R.color.colorDarkBackground));
-                } else {
-                    v.setBackgroundColor(getResources().getColor(R.color.colorLightBackground));
-
-                }
-            }
-
-
-            return v;
-        }
+    private RecyclerView.LayoutManager getLayoutManager() {
+        boolean useGrid = getIntent().getBooleanExtra(KEY_GRID, true);
+        return useGrid
+                ? new GridLayoutManager(this, 1) // 2
+                : new LinearLayoutManager(this);
     }
 
+    @Override
+    public void finishActivity() {
+        finish();
+        overridePendingTransition(R.anim.anim_slide_in_left, R.anim.anim_slide_out_right);
+    }
 
-    private class Server {
+    public static class Server {
         // {"id":0, "file":0, "city":"Essen","country":"Germany","image":"germany","ip":"51.68.191.75","active":"true","signal":"a"},
-        private String ID;
-        private String FileID;
-        private String City;
-        private String Country;
-        private String Image;
-        private String IP;
-        private String Active;
-        private String Signal;
+        public String ID;
+        public String FileID;
+        public String City;
+        public String Country;
+        public String Image;
+        public String IP;
+        public String Active;
+        public String Signal;
 
-        private String GetID() {
+        public String GetID() {
             return ID;
         }
 
-        private void SetID(String ID) {
+        public void SetID(String ID) {
             this.ID = ID;
         }
 
-        private String GetFileID() {
+        public String GetFileID() {
             return FileID;
         }
 
-        private void SetFileID(String FileID) {
+        public void SetFileID(String FileID) {
             this.FileID = FileID;
         }
 
-        private String GetCity() {
+        public String GetCity() {
             return City;
         }
 
-        private void SetCity(String City) {
+        public void SetCity(String City) {
             this.City = City;
         }
 
-        private String GetCountry() {
+        public String GetCountry() {
             return Country;
         }
 
-        private void SetCountry(String Country) {
+        public void SetCountry(String Country) {
             this.Country = Country;
         }
 
-        private String GetImage() {
+        public String GetImage() {
             return Image;
         }
 
-        private void SetImage(String Image) {
+        public void SetImage(String Image) {
             this.Image = Image;
         }
 
-        private String GetIP() {
+        public String GetIP() {
             return IP;
         }
 
-        private void SetIP(String IP) {
+        public void SetIP(String IP) {
             this.IP = IP;
         }
 
-        private String GetActive() {
+        public String GetActive() {
             return Active;
         }
 
-        private void SetActive(String Active) {
+        public void SetActive(String Active) {
             this.Active = Active;
         }
 
-        private String GetSignal() {
+        public String GetSignal() {
             return Signal;
         }
 
-        private void SetSignal(String Signal) {
+        public void SetSignal(String Signal) {
             this.Signal = Signal;
         }
     }

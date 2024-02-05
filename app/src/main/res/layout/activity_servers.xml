@@ -86,8 +86,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-<!--        <androidx.recyclerview.widget.RecyclerView-->
-        <ListView
+        <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/ls_servers_list_light"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -98,9 +97,9 @@
             android:scrollbars="vertical"
             android:visibility="gone">
 
-        </ListView>
+        </androidx.recyclerview.widget.RecyclerView>
 
-        <ListView
+        <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/ls_servers_list_dark"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
