@@ -2,7 +2,6 @@ package com.gold.hamrahvpn;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -27,8 +26,6 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.gold.hamrahvpn.openvpn.EncryptData;
-import com.gold.hamrahvpn.recyclerview.AdapterSampleActivity;
-import com.gold.hamrahvpn.recyclerview.AnimatorSampleActivity;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -39,6 +36,8 @@ import java.util.List;
 
 import de.blinkt.openvpn.core.App;
 import de.blinkt.openvpn.core.ProfileManager;
+import jp.wasabeef.recyclerview.animators.BaseItemAnimator;
+import jp.wasabeef.recyclerview.animators.ScaleInBottomAnimator;
 
 //import static com.google.android.gms.common.internal.safeparcel.SafeParcelable.NULL;
 
@@ -57,6 +56,16 @@ public class ServerActivity extends Activity {
 
     private boolean enabledGrid = false;
 
+    enum Type {
+        ScaleInBottom(new ScaleInBottomAnimator());
+
+        BaseItemAnimator animator;
+
+        Type(BaseItemAnimator animator) {
+            this.animator = animator;
+        }
+    }
+
 //    private FirebaseAnalytics mFirebaseAnalytics;
 
     // 100
@@ -72,30 +81,6 @@ public class ServerActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_servers);
 
-        findViewById(R.id.btn_animator_sample).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(ServerActivity.this, AnimatorSampleActivity.class);
-                intent.putExtra(KEY_GRID, enabledGrid);
-                startActivity(intent);
-            }
-        });
-
-        findViewById(R.id.btn_adapter_sample).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(ServerActivity.this, AdapterSampleActivity.class);
-                intent.putExtra(KEY_GRID, enabledGrid);
-                startActivity(intent);
-            }
-        });
-
-//        findViewById(R.id.grid).setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-//            @Override
-//            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-//                enabledGrid = isChecked;
-//            }
-//        });
 //        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
 
         pm = ProfileManager.getInstance(ServerActivity.this);
@@ -240,7 +225,6 @@ public class ServerActivity extends Activity {
         private CategoryArray adapter;
 
         ServersList() {
-
         }
 
         void Load() {
@@ -270,6 +254,8 @@ public class ServerActivity extends Activity {
 //                params.putString("device_id", App.device_id);
 //                params.putString("exception", "SA4" + e.toString());
 //                mFirebaseAnalytics.logEvent("app_param_error", params);
+                TextView showBool = findViewById(R.id.boolShowListServer);
+                showBool.setVisibility(View.VISIBLE);
             }
 
             try {
@@ -286,6 +272,8 @@ public class ServerActivity extends Activity {
 //                params.putString("device_id", App.device_id);
 //                params.putString("exception", "SA5" + e.toString());
 //                mFirebaseAnalytics.logEvent("app_param_error", params);
+                TextView showBool = findViewById(R.id.boolShowListServer);
+                showBool.setVisibility(View.VISIBLE);
             }
 
             List<Server> ServerList = new ArrayList<>();
@@ -471,8 +459,10 @@ public class ServerActivity extends Activity {
                         iv_signal_strength.setBackgroundResource(R.drawable.ic_signal_low);
                     }
                 }
+            } else {
+                TextView showBool = findViewById(R.id.boolShowListServer);
+                showBool.setVisibility(View.VISIBLE);
             }
-
 
             SharedPreferences ConnectionDetails = getSharedPreferences("connection_data", 0);
             int ID = Integer.valueOf(ConnectionDetails.getString("id", "1"));
