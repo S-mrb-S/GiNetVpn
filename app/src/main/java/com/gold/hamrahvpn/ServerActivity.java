@@ -2,6 +2,7 @@ package com.gold.hamrahvpn;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -26,7 +27,8 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.gold.hamrahvpn.openvpn.EncryptData;
-//import com.google.firebase.analytics.FirebaseAnalytics;
+import com.gold.hamrahvpn.recyclerview.AdapterSampleActivity;
+import com.gold.hamrahvpn.recyclerview.AnimatorSampleActivity;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -51,6 +53,10 @@ public class ServerActivity extends Activity {
 
     String DarkMode = "false";
 
+    public static final String KEY_GRID = "GRID";
+
+    private boolean enabledGrid = false;
+
 //    private FirebaseAnalytics mFirebaseAnalytics;
 
     // 100
@@ -66,6 +72,30 @@ public class ServerActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_servers);
 
+        findViewById(R.id.btn_animator_sample).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(ServerActivity.this, AnimatorSampleActivity.class);
+                intent.putExtra(KEY_GRID, enabledGrid);
+                startActivity(intent);
+            }
+        });
+
+        findViewById(R.id.btn_adapter_sample).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(ServerActivity.this, AdapterSampleActivity.class);
+                intent.putExtra(KEY_GRID, enabledGrid);
+                startActivity(intent);
+            }
+        });
+
+//        findViewById(R.id.grid).setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+//            @Override
+//            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+//                enabledGrid = isChecked;
+//            }
+//        });
 //        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
 
         pm = ProfileManager.getInstance(ServerActivity.this);
@@ -105,7 +135,6 @@ public class ServerActivity extends Activity {
                 getConnectionString.GetAppDetails();
             }
         });
-
 
 
         RelativeLayout linearLayoutServers = findViewById(R.id.constraintLayoutServers);

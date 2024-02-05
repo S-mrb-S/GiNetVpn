@@ -116,6 +116,9 @@
         <activity android:name=".FAQActivity" />
         <activity android:name=".ReviewActivity" />
 
+        <activity android:name=".recyclerview.AnimatorSampleActivity" />
+        <activity android:name=".recyclerview.AdapterSampleActivity" />
+
         <service
             android:name=".v2ray.services.V2rayVPNService"
             android:enabled="true"
