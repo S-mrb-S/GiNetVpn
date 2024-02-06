@@ -28,6 +28,7 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.gold.hamrahvpn.openvpn.EncryptData;
 import com.gold.hamrahvpn.recyclerview.MainAdapter;
+import com.gold.hamrahvpn.recyclerview.Server;
 import com.gold.hamrahvpn.util.FinishActivityListener;
 
 import org.json.JSONArray;
@@ -89,20 +90,12 @@ public class ServerActivity extends Activity implements FinishActivityListener {
         tv_servers_title.setTypeface(RobotoMedium);
 
         LinearLayout ll_server_back = findViewById(R.id.ll_server_back);
-        ll_server_back.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finishActivity();
-            }
-        });
+        ll_server_back.setOnClickListener(v -> finishActivity());
 
         LinearLayout ll_server_retry = findViewById(R.id.ll_server_refresh);
-        ll_server_retry.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                getConnectionString getConnectionString = new getConnectionString();
-                getConnectionString.GetAppDetails();
-            }
+        ll_server_retry.setOnClickListener(v -> {
+            getConnectionString getConnectionString = new getConnectionString();
+            getConnectionString.GetAppDetails();
         });
 
 
@@ -128,35 +121,21 @@ public class ServerActivity extends Activity implements FinishActivityListener {
             RequestQueue queue = Volley.newRequestQueue(ServerActivity.this);
             queue.getCache().clear();
             StringRequest stringRequest = new StringRequest(Request.Method.GET, "https://raw.githubusercontent.com/gayanvoice/gayankuruppu.github.io/source-json/appdetails.json",
-                    new Response.Listener<String>() {
-                        @Override
-                        public void onResponse(String Response) {
-                            AppDetails = Response;
-                        }
-                    }, new Response.ErrorListener() {
-                @Override
-                public void onErrorResponse(VolleyError error) {
-//                    Bundle params = new Bundle();
-//                    params.putString("device_id", App.device_id);
-//                    params.putString("exception", "SA1" + error.toString());
-//                    mFirebaseAnalytics.logEvent("app_param_error", params);
-                }
-            });
+                    Response -> AppDetails = Response, error -> {
+    //                    Bundle params = new Bundle();
+    //                    params.putString("device_id", App.device_id);
+    //                    params.putString("exception", "SA1" + error.toString());
+    //                    mFirebaseAnalytics.logEvent("app_param_error", params);
+                    });
             queue.add(stringRequest);
-            queue.addRequestFinishedListener(new RequestQueue.RequestFinishedListener<String>() {
-                @Override
-                public void onRequestFinished(Request<String> request) {
-                    final Handler handler = new Handler();
-                    handler.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            iv_server_refresh.setBackground(getDrawable(R.drawable.ic_servers_cloud));
-                            GetFileDetails();
-                        }
-                    }, 2000);
+            queue.addRequestFinishedListener((RequestQueue.RequestFinishedListener<String>) request -> {
+                final Handler handler = new Handler();
+                handler.postDelayed(() -> {
                     iv_server_refresh.setBackground(getDrawable(R.drawable.ic_servers_cloud));
                     GetFileDetails();
-                }
+                }, 2000);
+                iv_server_refresh.setBackground(getDrawable(R.drawable.ic_servers_cloud));
+                GetFileDetails();
             });
         }
 
@@ -165,42 +144,31 @@ public class ServerActivity extends Activity implements FinishActivityListener {
             RequestQueue queue = Volley.newRequestQueue(ServerActivity.this);
             queue.getCache().clear();
             StringRequest stringRequest = new StringRequest(Request.Method.GET, "https://raw.githubusercontent.com/gayanvoice/gayankuruppu.github.io/source-json/filedetails.json",
-                    new Response.Listener<String>() {
-                        @Override
-                        public void onResponse(String Response) {
-                            FileDetails = Response;
-                        }
-                    }, new Response.ErrorListener() {
-                @Override
-                public void onErrorResponse(VolleyError error) {
-//                    Bundle params = new Bundle();
-//                    params.putString("device_id", App.device_id);
-//                    params.putString("exception", "SA2" + error.toString());
-//                    mFirebaseAnalytics.logEvent("app_param_error", params);
-                }
-            });
+                    Response -> FileDetails = Response, error -> {
+    //                    Bundle params = new Bundle();
+    //                    params.putString("device_id", App.device_id);
+    //                    params.putString("exception", "SA2" + error.toString());
+    //                    mFirebaseAnalytics.logEvent("app_param_error", params);
+                    });
             queue.add(stringRequest);
-            queue.addRequestFinishedListener(new RequestQueue.RequestFinishedListener<String>() {
-                @Override
-                public void onRequestFinished(Request<String> request) {
-                    EncryptData En = new EncryptData();
-                    try {
-                        SharedPreferences SharedAppDetails = getSharedPreferences("app_values", 0);
-                        SharedPreferences.Editor Editor = SharedAppDetails.edit();
-                        Editor.putString("app_details", En.encrypt(AppDetails));
-                        Editor.putString("file_details", En.encrypt(FileDetails));
-                        Editor.apply();
-                    } catch (Exception e) {
+            queue.addRequestFinishedListener((RequestQueue.RequestFinishedListener<String>) request -> {
+                EncryptData En = new EncryptData();
+                try {
+                    SharedPreferences SharedAppDetails = getSharedPreferences("app_values", 0);
+                    SharedPreferences.Editor Editor = SharedAppDetails.edit();
+                    Editor.putString("app_details", En.encrypt(AppDetails));
+                    Editor.putString("file_details", En.encrypt(FileDetails));
+                    Editor.apply();
+                } catch (Exception e) {
 //                        Bundle params = new Bundle();
 //                        params.putString("device_id", App.device_id);
 //                        params.putString("exception", "SA3" + e.toString());
 //                        mFirebaseAnalytics.logEvent("app_param_error", params);
-                    }
-
-                    iv_server_refresh.setBackground(getDrawable(R.drawable.ic_servers_cloud));
-                    ServersList Servers = new ServersList();
-                    Servers.Load();
                 }
+
+                iv_server_refresh.setBackground(getDrawable(R.drawable.ic_servers_cloud));
+                ServersList Servers = new ServersList();
+                Servers.Load();
             });
         }
     }
@@ -279,7 +247,7 @@ public class ServerActivity extends Activity implements FinishActivityListener {
 
             SharedPreferences SettingsDetails = getSharedPreferences("settings_data", 0);
             String DarkMode = SettingsDetails.getString("dark_mode", "false");
-//            adapter = new MainAdapter(ServerList, ServerActivity.this);
+            adapter = new MainAdapter(ServerActivity.this, ServerList, ServerActivity.this);
             RecyclerView recyclerView;
             if (DarkMode.equals("true")) {
 //                listView_dark.setAdapter(adapter);
@@ -297,29 +265,7 @@ public class ServerActivity extends Activity implements FinishActivityListener {
             recyclerView.setLayoutManager(getLayoutManager());
             recyclerView.setItemAnimator(new FadeInAnimator());
 
-//            Spinner spinner = findViewById(R.id.spinner);
-//            ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1);
-//            for (Type type : Type.values()) {
-//                spinnerAdapter.add(type.name());
-//            }
-//            spinner.setAdapter(spinnerAdapter);
-//            spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-//                @Override
-//                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-//                    AnimationAdapter animationAdapter = Type.values()[position].get(view.getContext());
-//                    animationAdapter.setFirstOnly(true);
-//                    animationAdapter.setDuration(500);
-//                    animationAdapter.setInterpolator(new OvershootInterpolator(0.5f));
-//                    recyclerView.setAdapter(animationAdapter);
-//                }
-//
-//                @Override
-//                public void onNothingSelected(AdapterView<?> parent) {
-//                    // no-op
-//                }
-//            });
-
-            AnimationAdapter defaultAdapter = new AlphaInAnimationAdapter(new MainAdapter(ServerActivity.this, ServerList, ServerActivity.this));
+            AnimationAdapter defaultAdapter = new AlphaInAnimationAdapter(adapter);
             defaultAdapter.setFirstOnly(true);
             defaultAdapter.setDuration(500);
             defaultAdapter.setInterpolator(new OvershootInterpolator(0.5f));
@@ -339,82 +285,5 @@ public class ServerActivity extends Activity implements FinishActivityListener {
         finish();
         overridePendingTransition(R.anim.anim_slide_in_left, R.anim.anim_slide_out_right);
     }
-
-    public static class Server {
-        // {"id":0, "file":0, "city":"Essen","country":"Germany","image":"germany","ip":"51.68.191.75","active":"true","signal":"a"},
-        public String ID;
-        public String FileID;
-        public String City;
-        public String Country;
-        public String Image;
-        public String IP;
-        public String Active;
-        public String Signal;
-
-        public String GetID() {
-            return ID;
-        }
-
-        public void SetID(String ID) {
-            this.ID = ID;
-        }
-
-        public String GetFileID() {
-            return FileID;
-        }
-
-        public void SetFileID(String FileID) {
-            this.FileID = FileID;
-        }
-
-        public String GetCity() {
-            return City;
-        }
-
-        public void SetCity(String City) {
-            this.City = City;
-        }
-
-        public String GetCountry() {
-            return Country;
-        }
-
-        public void SetCountry(String Country) {
-            this.Country = Country;
-        }
-
-        public String GetImage() {
-            return Image;
-        }
-
-        public void SetImage(String Image) {
-            this.Image = Image;
-        }
-
-        public String GetIP() {
-            return IP;
-        }
-
-        public void SetIP(String IP) {
-            this.IP = IP;
-        }
-
-        public String GetActive() {
-            return Active;
-        }
-
-        public void SetActive(String Active) {
-            this.Active = Active;
-        }
-
-        public String GetSignal() {
-            return Signal;
-        }
-
-        public void SetSignal(String Signal) {
-            this.Signal = Signal;
-        }
-    }
-
 
 }

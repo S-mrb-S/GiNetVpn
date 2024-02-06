@@ -15,8 +15,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.gold.hamrahvpn.R;
 import com.gold.hamrahvpn.ServerActivity;
-import com.gold.hamrahvpn.util.FinishActivityListener;
 import com.gold.hamrahvpn.openvpn.EncryptData;
+import com.gold.hamrahvpn.util.FinishActivityListener;
 
 import java.util.List;
 
@@ -78,11 +78,11 @@ import de.blinkt.openvpn.core.App;
 //}
 public class MainAdapter extends RecyclerView.Adapter<MainAdapter.ViewHolder> {
 
-    private List<ServerActivity.Server> dataSet;
+    private List<Server> dataSet;
     private Context context;
     private FinishActivityListener finishActivityListener;
 
-    public MainAdapter(Context context, List<ServerActivity.Server> dataSet, FinishActivityListener finishActivityListener) {
+    public MainAdapter(Context context, List<Server> dataSet, FinishActivityListener finishActivityListener) {
         this.context = context;
         this.dataSet = dataSet;
         this.finishActivityListener = finishActivityListener;
@@ -100,7 +100,7 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.ViewHolder> {
 //        Picasso.get().load(R.drawable.chip).into(holder.image);
 //            holder.text.setText(dataSet.get(position));
 
-        final ServerActivity.Server Server = dataSet.get(position);
+        final Server Server = dataSet.get(position);
 
         if (Server != null) {
 
@@ -174,65 +174,60 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.ViewHolder> {
                     break;
             }
 
-            holder.ll_item.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    holder.ll_item.setBackgroundColor(context.getResources().getColor(R.color.colorSelectItem));
-                    holder.tv_country.setTextColor(context.getResources().getColor(R.color.colorDarkText));
-                    EncryptData En = new EncryptData();
-                    try {
-                        SharedPreferences SharedAppDetails = context.getSharedPreferences("connection_data", 0);
-                        SharedPreferences.Editor Editor = SharedAppDetails.edit();
-                        Editor.putString("id", Server.GetID());
-                        Editor.putString("file_id", Server.GetFileID());
-                        Editor.putString("file", En.encrypt(ServerActivity.FileArray[Integer.valueOf(Server.GetFileID())][1]));
-                        Editor.putString("city", Server.GetCity());
-                        Editor.putString("country", Server.GetCountry());
-                        Editor.putString("image", Server.GetImage());
-                        Editor.putString("ip", Server.GetIP());
-                        Editor.putString("active", Server.GetActive());
-                        Editor.putString("signal", Server.GetSignal());
-                        Editor.apply();
-                        App.hasFile = true;
-                        App.abortConnection = true;
-                    } catch (Exception e) {
+            holder.ll_item.setOnClickListener(v -> {
+                holder.ll_item.setBackgroundColor(context.getResources().getColor(R.color.colorSelectItem));
+                holder.tv_country.setTextColor(context.getResources().getColor(R.color.colorDarkText));
+                EncryptData En = new EncryptData();
+                try {
+                    SharedPreferences SharedAppDetails = context.getSharedPreferences("connection_data", 0);
+                    SharedPreferences.Editor Editor = SharedAppDetails.edit();
+                    Editor.putString("id", Server.GetID());
+                    Editor.putString("file_id", Server.GetFileID());
+                    Editor.putString("file", En.encrypt(ServerActivity.FileArray[Integer.valueOf(Server.GetFileID())][1]));
+                    Editor.putString("city", Server.GetCity());
+                    Editor.putString("country", Server.GetCountry());
+                    Editor.putString("image", Server.GetImage());
+                    Editor.putString("ip", Server.GetIP());
+                    Editor.putString("active", Server.GetActive());
+                    Editor.putString("signal", Server.GetSignal());
+                    Editor.apply();
+                    App.hasFile = true;
+                    App.abortConnection = true;
+                } catch (Exception e) {
 //                            Bundle params = new Bundle();
 //                            params.putString("device_id", App.device_id);
 //                            params.putString("exception", "SA6" + e.toString());
 //                            mFirebaseAnalytics.logEvent("app_param_error", params);
-                    }
-                    finishActivityListener.finishActivity();
                 }
+                finishActivityListener.finishActivity();
             });
 
-            if (Server.GetSignal().equals(null)) {
-                holder.iv_signal_strength.setBackgroundResource(R.drawable.ic_signal_low);
-            } else {
-                switch (Server.GetSignal()) {
-                    case "a":
-                        holder.iv_signal_strength.setBackgroundResource(R.drawable.ic_signal_full);
-                        break;
-                    case "b":
-                        holder.iv_signal_strength.setBackgroundResource(R.drawable.ic_signal_normal);
-                        break;
-                    case "c":
-                        holder.iv_signal_strength.setBackgroundResource(R.drawable.ic_signal_medium);
-                        break;
-                    case "d":
-                        holder.iv_signal_strength.setBackgroundResource(R.drawable.ic_signal_low);
-                        break;
-                    default:
-                        holder.iv_signal_strength.setBackgroundResource(R.drawable.ic_signal_low);
-                        break;
-                }
+
+            switch (Server.GetSignal()) {
+                case "a":
+                    holder.iv_signal_strength.setBackgroundResource(R.drawable.ic_signal_full);
+                    break;
+                case "b":
+                    holder.iv_signal_strength.setBackgroundResource(R.drawable.ic_signal_normal);
+                    break;
+                case "c":
+                    holder.iv_signal_strength.setBackgroundResource(R.drawable.ic_signal_medium);
+                    break;
+//                case "d":
+//                    holder.iv_signal_strength.setBackgroundResource(R.drawable.ic_signal_low);
+//                    break;
+                default:
+                    holder.iv_signal_strength.setBackgroundResource(R.drawable.ic_signal_low);
+                    break;
             }
+
         } else {
             holder.showBool.setVisibility(View.VISIBLE);
         }
 
         // bottom
         SharedPreferences ConnectionDetails = context.getSharedPreferences("connection_data", 0);
-        int ID = Integer.valueOf(ConnectionDetails.getString("id", "1"));
+        int ID = Integer.parseInt(ConnectionDetails.getString("id", "1"));
 
         if (position == ID) {
             holder.itemView.setBackgroundColor(context.getResources().getColor(R.color.colorSelectItem));
