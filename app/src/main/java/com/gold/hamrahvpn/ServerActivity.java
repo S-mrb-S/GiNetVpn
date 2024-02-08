@@ -1,19 +1,20 @@
 package com.gold.hamrahvpn;
 
+import static com.gold.hamrahvpn.Data.KEY_GRID;
+import static com.gold.hamrahvpn.Data.KEY_app_details;
+import static com.gold.hamrahvpn.Data.RobotoMedium;
+import static com.gold.hamrahvpn.MainActivity.ENCRYPT_DATA;
 import static com.gold.hamrahvpn.util.SafeParcelable.NULL;
 
 import android.app.Activity;
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -22,14 +23,16 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.gold.hamrahvpn.openvpn.EncryptData;
 import com.gold.hamrahvpn.recyclerview.MainAdapter;
-import com.gold.hamrahvpn.recyclerview.Server;
+import com.gold.hamrahvpn.recyclerview.cmp.OpenVpnServerList;
 import com.gold.hamrahvpn.util.FinishActivityListener;
+import com.gold.hamrahvpn.util.LogManager;
+import com.gold.hamrahvpn.util.MmkvManager;
+import com.skydoves.powerspinner.OnSpinnerItemSelectedListener;
+import com.skydoves.powerspinner.PowerSpinnerView;
+import com.tencent.mmkv.MMKV;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -38,25 +41,25 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
+import de.blinkt.openvpn.core.App;
 import de.blinkt.openvpn.core.ProfileManager;
 import jp.wasabeef.recyclerview.adapters.AlphaInAnimationAdapter;
 import jp.wasabeef.recyclerview.adapters.AnimationAdapter;
 import jp.wasabeef.recyclerview.animators.FadeInAnimator;
 
-//import static com.google.android.gms.common.internal.safeparcel.SafeParcelable.NULL;
-
+/**
+ * by MehraB832
+ */
 public class ServerActivity extends Activity implements FinishActivityListener {
     RecyclerView listView_light, listView_dark; // list
     ProfileManager pm;
     ImageView iv_server_refresh;
     String AppDetails = "NULL", FileDetails = "NULL";
-
     String[][] ServerArray = new String[40][8];
     public static String[][] FileArray = new String[40][2];
-
+    MMKV settingsStorage = MmkvManager.getSettingsStorage();
+    MMKV appValStorage = MmkvManager.getAppValStorage();
     public static String DarkMode = "false";
-
-    public static final String KEY_GRID = "GRID";
 
     // 100
     @Override
@@ -73,9 +76,8 @@ public class ServerActivity extends Activity implements FinishActivityListener {
 
         iv_server_refresh = findViewById(R.id.iv_server_refresh);
 
-        EncryptData En = new EncryptData();
-        SharedPreferences AppValues = getSharedPreferences("app_values", 0);
-        String AppDetails = En.decrypt(AppValues.getString("app_details", NULL));
+        String AppValues = appValStorage.getString(KEY_app_details, NULL);
+        String AppDetails = ENCRYPT_DATA.decrypt(AppValues);
 
         if (AppDetails.isEmpty()) {
             getConnectionString getConnectionString = new getConnectionString();
@@ -85,7 +87,6 @@ public class ServerActivity extends Activity implements FinishActivityListener {
             Servers.Load();
         }
 
-        Typeface RobotoMedium = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Medium.ttf");
         TextView tv_servers_title = findViewById(R.id.tv_servers_title);
         tv_servers_title.setTypeface(RobotoMedium);
 
@@ -98,11 +99,15 @@ public class ServerActivity extends Activity implements FinishActivityListener {
             getConnectionString.GetAppDetails();
         });
 
+        PowerSpinnerView powerSpinnerView = findViewById(R.id.powerSpinner);
+        powerSpinnerView.setOnSpinnerItemSelectedListener((OnSpinnerItemSelectedListener<String>) (oldIndex, oldItem, newIndex, newItem) -> Toast.makeText(ServerActivity.this, newItem + " selected!", Toast.LENGTH_SHORT).show());
 
-        RelativeLayout linearLayoutServers = findViewById(R.id.constraintLayoutServers);
+
+        LinearLayout linearLayoutServers = findViewById(R.id.constraintLayoutServers);
         ImageView iv_servers_go_back = findViewById(R.id.iv_servers_go_back);
-        SharedPreferences SettingsDetails = getSharedPreferences("settings_data", 0);
-        DarkMode = SettingsDetails.getString("dark_mode", "false");
+
+        DarkMode = settingsStorage.getString("dark_mode", "false");
+
         if (DarkMode.equals("true")) {
             linearLayoutServers.setBackgroundColor(getResources().getColor(R.color.colorDarkBackground));
             tv_servers_title.setTextColor(getResources().getColor(R.color.colorDarkText));
@@ -122,11 +127,11 @@ public class ServerActivity extends Activity implements FinishActivityListener {
             queue.getCache().clear();
             StringRequest stringRequest = new StringRequest(Request.Method.GET, "https://raw.githubusercontent.com/gayanvoice/gayankuruppu.github.io/source-json/appdetails.json",
                     Response -> AppDetails = Response, error -> {
-    //                    Bundle params = new Bundle();
-    //                    params.putString("device_id", App.device_id);
-    //                    params.putString("exception", "SA1" + error.toString());
-    //                    mFirebaseAnalytics.logEvent("app_param_error", params);
-                    });
+                Bundle params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "SA1" + error.toString());
+                LogManager.logEvent(params);
+            });
             queue.add(stringRequest);
             queue.addRequestFinishedListener((RequestQueue.RequestFinishedListener<String>) request -> {
                 final Handler handler = new Handler();
@@ -145,25 +150,21 @@ public class ServerActivity extends Activity implements FinishActivityListener {
             queue.getCache().clear();
             StringRequest stringRequest = new StringRequest(Request.Method.GET, "https://raw.githubusercontent.com/gayanvoice/gayankuruppu.github.io/source-json/filedetails.json",
                     Response -> FileDetails = Response, error -> {
-    //                    Bundle params = new Bundle();
-    //                    params.putString("device_id", App.device_id);
-    //                    params.putString("exception", "SA2" + error.toString());
-    //                    mFirebaseAnalytics.logEvent("app_param_error", params);
-                    });
+                Bundle params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "SA2" + error.toString());
+                LogManager.logEvent(params);
+            });
             queue.add(stringRequest);
             queue.addRequestFinishedListener((RequestQueue.RequestFinishedListener<String>) request -> {
-                EncryptData En = new EncryptData();
                 try {
-                    SharedPreferences SharedAppDetails = getSharedPreferences("app_values", 0);
-                    SharedPreferences.Editor Editor = SharedAppDetails.edit();
-                    Editor.putString("app_details", En.encrypt(AppDetails));
-                    Editor.putString("file_details", En.encrypt(FileDetails));
-                    Editor.apply();
+                    appValStorage.putString("app_details", ENCRYPT_DATA.encrypt(AppDetails));
+                    appValStorage.putString("file_details", ENCRYPT_DATA.encrypt(FileDetails));
                 } catch (Exception e) {
-//                        Bundle params = new Bundle();
-//                        params.putString("device_id", App.device_id);
-//                        params.putString("exception", "SA3" + e.toString());
-//                        mFirebaseAnalytics.logEvent("app_param_error", params);
+                    Bundle params = new Bundle();
+                    params.putString("device_id", App.device_id);
+                    params.putString("exception", "SA3" + e);
+                    LogManager.logEvent(params);
                 }
 
                 iv_server_refresh.setBackground(getDrawable(R.drawable.ic_servers_cloud));
@@ -174,16 +175,13 @@ public class ServerActivity extends Activity implements FinishActivityListener {
     }
 
     class ServersList {
-        private MainAdapter adapter;
 
         ServersList() {
         }
 
         void Load() {
-            EncryptData En = new EncryptData();
-            SharedPreferences ConnectionDetails = getSharedPreferences("app_values", 0);
-            AppDetails = En.decrypt(ConnectionDetails.getString("app_details", NULL));
-            FileDetails = En.decrypt(ConnectionDetails.getString("file_details", NULL));
+            AppDetails = ENCRYPT_DATA.decrypt(appValStorage.getString("app_details", NULL));
+            FileDetails = ENCRYPT_DATA.decrypt(appValStorage.getString("file_details", NULL));
             int NumServers = 0;
             try {
                 JSONObject json_response = new JSONObject(AppDetails);
@@ -202,10 +200,10 @@ public class ServerActivity extends Activity implements FinishActivityListener {
                 }
 
             } catch (JSONException e) {
-//                Bundle params = new Bundle();
-//                params.putString("device_id", App.device_id);
-//                params.putString("exception", "SA4" + e.toString());
-//                mFirebaseAnalytics.logEvent("app_param_error", params);
+                Bundle params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "SA4" + e);
+                LogManager.logEvent(params);
                 TextView showBool = findViewById(R.id.boolShowListServer);
                 showBool.setVisibility(View.VISIBLE);
             }
@@ -220,42 +218,41 @@ public class ServerActivity extends Activity implements FinishActivityListener {
                 }
 
             } catch (JSONException e) {
-//                Bundle params = new Bundle();
-//                params.putString("device_id", App.device_id);
-//                params.putString("exception", "SA5" + e.toString());
-//                mFirebaseAnalytics.logEvent("app_param_error", params);
+                Bundle params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "SA5" + e);
+                LogManager.logEvent(params);
                 TextView showBool = findViewById(R.id.boolShowListServer);
                 showBool.setVisibility(View.VISIBLE);
             }
 
-            List<Server> ServerList = new ArrayList<>();
+            List<OpenVpnServerList> openVpnServerListItemList = new ArrayList<>();
             listView_light = findViewById(R.id.ls_servers_list_light);
             listView_dark = findViewById(R.id.ls_servers_list_dark);
 
             for (int x = 0; x < NumServers; x++) {
-                Server Server = new Server();
-                Server.SetID(ServerArray[x][0]);
-                Server.SetFileID(ServerArray[x][1]);
-                Server.SetCity(ServerArray[x][2]);
-                Server.SetCountry(ServerArray[x][3]);
-                Server.SetImage(ServerArray[x][4]);
-                Server.SetIP(ServerArray[x][5]);
-                Server.SetActive(ServerArray[x][6]);
-                Server.SetSignal(ServerArray[x][7]);
-                ServerList.add(Server);
+                OpenVpnServerList OpenVpnServerList = new OpenVpnServerList();
+                OpenVpnServerList.SetID(ServerArray[x][0]);
+                OpenVpnServerList.SetFileID(ServerArray[x][1]);
+                OpenVpnServerList.SetCity(ServerArray[x][2]);
+                OpenVpnServerList.SetCountry(ServerArray[x][3]);
+                OpenVpnServerList.SetImage(ServerArray[x][4]);
+                OpenVpnServerList.SetIP(ServerArray[x][5]);
+                OpenVpnServerList.SetActive(ServerArray[x][6]);
+                OpenVpnServerList.SetSignal(ServerArray[x][7]);
+                openVpnServerListItemList.add(OpenVpnServerList);
             }
 
-            SharedPreferences SettingsDetails = getSharedPreferences("settings_data", 0);
-            String DarkMode = SettingsDetails.getString("dark_mode", "false");
-            adapter = new MainAdapter(ServerActivity.this, ServerList, ServerActivity.this);
+            String DarkMode = settingsStorage.getString("dark_mode", "false");
+            MainAdapter adapter = new MainAdapter(ServerActivity.this, openVpnServerListItemList, ServerActivity.this);
             RecyclerView recyclerView;
+            // Show recyclerview --> darklist | lightlist
+
             if (DarkMode.equals("true")) {
-//                listView_dark.setAdapter(adapter);
                 recyclerView = listView_dark;
                 listView_dark.setVisibility(View.VISIBLE);
                 listView_light.setVisibility(View.GONE);
             } else {
-//                listView_light.setAdapter(adapter);
                 recyclerView = listView_light;
                 listView_light.setVisibility(View.VISIBLE);
                 listView_dark.setVisibility(View.GONE);

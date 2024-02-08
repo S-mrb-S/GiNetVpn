@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Hamrah VPN</string>
 
-    <!--<string name="title_activity_server_list">Server Lists</string>
+    <!--<string name="title_activity_server_list">OpenVpnServerList Lists</string>
     <string name="action_settings">Settings</string>
     <string name="section_format">Hello World from section: %1$d</string>
     <string name="title_activity_vpnsettings">Settings</string>-->
@@ -64,7 +64,7 @@
     <string name="error">"Error: "</string>
     <string name="last_openvpn_tun_config">Opening tun interface:</string>
     <string name="local_ip_info">Local IPv4: %1$s/%2$d IPv6: %3$s MTU: %4$d</string>
-    <string name="dns_server_info">DNS Server: %1$s, Domain: %2$s</string>
+    <string name="dns_server_info">DNS OpenVpnServerList: %1$s, Domain: %2$s</string>
     <string name="routes_info_incl">Routes: %1$s %2$s</string>
     <string name="routes_info_excl">Routes excluded: %1$s %2$s</string>
     <string name="routes_debug">VpnService routes installed: %1$s %2$s</string>
@@ -83,7 +83,7 @@
     <string name="mobile_info">%10$s %9$s running on %3$s %1$s (%2$s), Android %6$s (%7$s) API %4$d, ABI %5$s, (%8$s)</string>
     <string name="error_rsa_sign">Error signing with Android keystore key %1$s: %2$s</string>
     <string name="warn_no_dns">No DNS servers being used. Name resolution may not work. Consider setting custom DNS Servers. Please also note that Android will keep using your proxy settings specified for your mobile/Wi-Fi connection when no DNS servers are set.</string>
-    <string name="dns_add_error">Could not add DNS Server \"%1$s\", rejected by the system: %2$s</string>
+    <string name="dns_add_error">Could not add DNS OpenVpnServerList \"%1$s\", rejected by the system: %2$s</string>
     <string name="ip_add_error">Could not configure IP Address \"%1$s\", rejected by the system: %2$s</string>
     <string name="getproxy_error">Error getting proxy settings: %s</string>
     <string name="using_proxy">Using proxy %1$s %2$d</string>

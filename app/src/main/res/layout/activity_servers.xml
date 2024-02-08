@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/constraintLayoutServers"
     android:layout_width="match_parent"
@@ -12,8 +13,6 @@
         android:id="@+id/linearLayoutTitleBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@android:color/white"
-        android:elevation="8dp"
         android:orientation="horizontal">
 
         <LinearLayout
@@ -89,7 +88,7 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/ls_servers_list_light"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:divider="@color/colorLightList"
             android:dividerHeight="1dp"
             android:footerDividersEnabled="true"
@@ -102,7 +101,7 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/ls_servers_list_dark"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:divider="@color/colorDarkList"
             android:dividerHeight="1dp"
             android:footerDividersEnabled="true"
@@ -114,20 +113,40 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
+        android:layout_height="70dp"
         android:background="@drawable/layout_round"
-        android:elevation="15dp"
-        android:gravity="center"
-        android:orientation="horizontal"
-        android:paddingTop="@dimen/lo_8dpGrid"
-        android:paddingBottom="@dimen/lo_8dpGrid">
+        android:orientation="vertical">
+
+        <com.skydoves.powerspinner.PowerSpinnerView
+            android:id="@+id/powerSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:background="@color/colorBlue"
+            android:gravity="center"
+            android:hint="V2ray Fast"
+            android:textColor="@color/colorWhite"
+            android:textColorHint="@color/colorWhite"
+            android:textSize="14.5sp"
+            app:spinner_arrow_gravity="end"
+            app:spinner_arrow_padding="8dp"
+            app:spinner_divider_color="@color/colorLightGreen"
+            app:spinner_divider_show="true"
+            app:spinner_divider_size="0.4dp"
+            app:spinner_item_array="@array/spinner_items"
+            app:spinner_item_height="66dp"
+            app:spinner_popup_animation="fade"
+            app:spinner_popup_background="@color/colorBlue"
+            app:spinner_popup_elevation="14dp" />
 
         <TextView
-            android:id="@+id/checkboxText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="V2ray" />
+            android:id="@+id/textViewCenter"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_centerInParent="false"
+            android:gravity="center"
+            android:text="test" />
+
     </LinearLayout>
 
     <TextView
@@ -139,4 +158,4 @@
         android:text="لیستی برای نمایش وجود ندارد"
         android:visibility="gone" />
 
-</RelativeLayout>
+</LinearLayout>

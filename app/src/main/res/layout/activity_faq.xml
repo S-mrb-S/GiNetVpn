@@ -226,7 +226,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:text="Just Tap on the FLAG Button Top-Right Corner and Change another Server"
+                    android:text="Just Tap on the FLAG Button Top-Right Corner and Change another OpenVpnServerList"
                     android:textColor="@color/textSub"
                     android:textSize="@dimen/ts_Body2" />
             </LinearLayout>

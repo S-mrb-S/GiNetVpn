@@ -4,10 +4,11 @@
  */
 package de.blinkt.openvpn.core;
 
+import static com.gold.hamrahvpn.Data.settingsStorage;
+
 import android.app.Application;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -15,6 +16,7 @@ import android.util.Log;
 
 import com.gold.hamrahvpn.R;
 import com.gold.hamrahvpn.v2ray.V2rayController;
+import com.tencent.mmkv.MMKV;
 
 import java.util.Calendar;
 import java.util.Random;
@@ -37,17 +39,19 @@ public class App extends /*com.orm.SugarApp*/ Application {
     public void onCreate() {
         super.onCreate();
         createNotificationChannel();
+        MMKV.initialize(this);
 
+//        SharedPreferences sp_settings = getSharedPreferences("settings_data", 0);
 
-        SharedPreferences sp_settings = getSharedPreferences("settings_data", 0);
-        device_id = sp_settings.getString("device_id", "NULL");
+        device_id = settingsStorage.getString("device_id", "NULL");
 
         if (device_id.equals("NULL")) {
             device_id = getUniqueKey();
-            SharedPreferences.Editor Editor = sp_settings.edit();
-            Editor.putString("device_id", device_id);
-            Editor.putString("device_created", String.valueOf(System.currentTimeMillis()));
-            Editor.apply();
+//            SharedPreferences.Editor Editor = sp_settings.edit();
+            settingsStorage.putString("device_id", device_id);
+            settingsStorage.putString("device_created", String.valueOf(System.currentTimeMillis()));
+//            settingsStorage.apply();
+//            Editor.apply();
 
         }
 
@@ -57,6 +61,26 @@ public class App extends /*com.orm.SugarApp*/ Application {
 
         // V2ray
         V2rayController.init(getApplicationContext());
+
+//        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+//            @Override
+//            public void uncaughtException(@NonNull Thread thread, @NonNull Throwable ex) {
+//                // اینجا می‌توانید کد مربوط به نمایش خطا یا ذخیره آن را قرار دهید
+//                Log.e("MyApplication ERR", "Uncaught exception occurred!", ex);
+//                Toast.makeText(App.this, "error found in MainApplication!", Toast.LENGTH_SHORT).show();
+//
+//                // می‌توانید Activity فعلی را ببندید
+//                // finish();
+//
+//                // و یا برنامه را مجدداً شروع کنید
+////                Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+////                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+////                startActivity(intent);
+//
+//                // خروج از برنامه
+////                System.exit(1);
+//            }
+//        });
     }
 
     private void createNotificationChannel() {

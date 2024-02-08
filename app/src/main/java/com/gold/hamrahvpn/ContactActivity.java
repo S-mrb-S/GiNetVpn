@@ -1,11 +1,7 @@
 package com.gold.hamrahvpn;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.Typeface;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
@@ -21,7 +17,7 @@ public class ContactActivity extends Activity {
 //    EditText et_about_contact_other_problems, et_about_contact_email;
 
 //    String advertise, speed, connecting, working, crashed, other, email;
-//    private FirebaseAnalytics mFirebaseAnalytics;
+//    private FirebaseAnalytics LogManager;
 
     @Override
     public void onBackPressed() {
@@ -34,7 +30,7 @@ public class ContactActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_contact);
 
-//        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
+//        LogManager = FirebaseAnalytics.getInstance(this);
 
 //        tv_contact_title = findViewById(R.id.tv_contact_title);
 //        tv_about_about_contact_problem = findViewById(R.id.tv_about_contact_problem);
@@ -52,9 +48,9 @@ public class ContactActivity extends Activity {
 //
 //        btn_about_contact_submit = findViewById(R.id.btn_about_contact_submit);
 
-        Typeface RobotoMedium = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Medium.ttf");
-        Typeface RobotoRegular = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Regular.ttf");
-        Typeface RobotoBold = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Bold.ttf");
+//        Typeface RobotoMedium = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Medium.ttf");
+//        Typeface RobotoRegular = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Regular.ttf");
+//        Typeface RobotoBold = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Bold.ttf");
 
 
 //        tv_contact_title.setTypeface(RobotoMedium);
@@ -183,29 +179,29 @@ public class ContactActivity extends Activity {
 
     }
 
-    private boolean hasInternetConnection() {
-        boolean haveConnectedWifi = false;
-        boolean haveConnectedMobile = false;
-        try {
-            ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-            NetworkInfo[] netInfo = cm.getAllNetworkInfo();
-            for (NetworkInfo ni : netInfo) {
-                if (ni.getTypeName().equalsIgnoreCase("WIFI"))
-                    if (ni.isConnected())
-                        haveConnectedWifi = true;
-                if (ni.getTypeName().equalsIgnoreCase("MOBILE"))
-                    if (ni.isConnected())
-                        haveConnectedMobile = true;
-            }
-        } catch (Exception e) {
-//            Bundle params = new Bundle();
-//            params.putString("device_id", App.device_id);
-//            params.putString("exception", "CA1" + e.toString());
-//            mFirebaseAnalytics.logEvent("app_param_error", params);
-        }
-
-        return haveConnectedWifi || haveConnectedMobile;
-    }
+//    private boolean hasInternetConnection() {
+//        boolean haveConnectedWifi = false;
+//        boolean haveConnectedMobile = false;
+//        try {
+//            ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+//            NetworkInfo[] netInfo = cm.getAllNetworkInfo();
+//            for (NetworkInfo ni : netInfo) {
+//                if (ni.getTypeName().equalsIgnoreCase("WIFI"))
+//                    if (ni.isConnected())
+//                        haveConnectedWifi = true;
+//                if (ni.getTypeName().equalsIgnoreCase("MOBILE"))
+//                    if (ni.isConnected())
+//                        haveConnectedMobile = true;
+//            }
+//        } catch (Exception e) {
+////            Bundle params = new Bundle();
+////            params.putString("device_id", App.device_id);
+////            params.putString("exception", "CA1" + e);
+////            LogManager.logEvent(params);
+//        }
+//
+//        return haveConnectedWifi || haveConnectedMobile;
+//    }
 
 //    class SendContactLog extends Thread {
 //        @Override
@@ -239,8 +235,8 @@ public class ContactActivity extends Activity {
 //            } catch (Exception e) { // SF5
 ////                Bundle params = new Bundle();
 ////                params.putString("device_id", App.device_id);
-////                params.putString("exception", "CA4" + e.toString());
-////                mFirebaseAnalytics.logEvent("app_param_error", params);
+////                params.putString("exception", "CA4" + e);
+////                LogManager.logEvent(params);
 //            }
 //
 //            str_url = str_url + "?" + str_post;
@@ -258,7 +254,7 @@ public class ContactActivity extends Activity {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
 ////                    params.putString("exception", "CA2" + error.toString());
-////                    mFirebaseAnalytics.logEvent("app_param_error", params);
+////                    LogManager.logEvent(params);
 //                }
 //            });
 //            // Add the request to the RequestQueue.
@@ -285,8 +281,8 @@ public class ContactActivity extends Activity {
 //                version = "00";
 ////                Bundle params = new Bundle();
 ////                params.putString("device_id", App.device_id);
-////                params.putString("exception", "CA3" + e.toString());
-////                mFirebaseAnalytics.logEvent("app_param_error", params);
+////                params.putString("exception", "CA3" + e);
+////                LogManager.logEvent(params);
 //            }
 //            return time + str_manufacturer + str_api + str_model + version;
 //        }

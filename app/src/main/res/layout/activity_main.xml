@@ -179,6 +179,50 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/iv_progress_bar" />
 
+    <LinearLayout
+        android:id="@+id/ll_protocol_main"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="20.0dip"
+        android:background="@drawable/bg_btn_servers"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingLeft="8.0dip"
+        android:paddingTop="16.0dip"
+        android:paddingRight="8.0dip"
+        android:paddingBottom="16.0dip"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_connection">
+
+        <ImageView
+            android:layout_width="16.0dip"
+            android:layout_height="16.0dip"
+            android:layout_gravity="center"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_flag_canada" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginStart="15.0dip"
+            android:layout_marginEnd="10.0dip"
+            android:gravity="center"
+            android:text="Protocol (A)"
+            android:textColor="@color/colorBlueDark"
+            android:textSize="14.0sp"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:layout_width="20.0dip"
+            android:layout_height="20.0dip"
+            android:layout_gravity="center"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_cloud_download" />
+    </LinearLayout>
+
 
     <LinearLayout
         android:id="@+id/ll_main_data"

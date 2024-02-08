@@ -1,15 +1,32 @@
 package com.gold.hamrahvpn;
 
+import static com.gold.hamrahvpn.Data.KB;
+import static com.gold.hamrahvpn.Data.MB;
+import static com.gold.hamrahvpn.Data.NA;
+import static com.gold.hamrahvpn.Data.RobotoBold;
+import static com.gold.hamrahvpn.Data.RobotoLight;
+import static com.gold.hamrahvpn.Data.RobotoMedium;
+import static com.gold.hamrahvpn.Data.RobotoRegular;
+import static com.gold.hamrahvpn.Data.Version_txt;
+import static com.gold.hamrahvpn.Data.day_ago;
+import static com.gold.hamrahvpn.Data.days_ago;
+import static com.gold.hamrahvpn.Data.default_byte_txt;
+import static com.gold.hamrahvpn.Data.default_usage_permissions_backg_txt;
+import static com.gold.hamrahvpn.Data.default_usage_permissions_txt;
+import static com.gold.hamrahvpn.Data.device_time_txt;
+import static com.gold.hamrahvpn.Data.hour_ago;
+import static com.gold.hamrahvpn.Data.hours_ago;
+import static com.gold.hamrahvpn.Data.minute_ago;
+import static com.gold.hamrahvpn.Data.minutes_ago;
+import static com.gold.hamrahvpn.Data.seconds_ago;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Switch;
@@ -17,12 +34,18 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
+import com.gold.hamrahvpn.util.LogManager;
+import com.gold.hamrahvpn.util.MmkvManager;
+import com.tencent.mmkv.MMKV;
+
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+
+import de.blinkt.openvpn.core.App;
 //import android.graphics.Color;
 
 public class UsageActivity extends Activity {
@@ -35,7 +58,9 @@ public class UsageActivity extends Activity {
     TextView tv_usage_cu_title, tv_usage_cu_version;
     //    TextView tv_usage_share_title, tv_usage_share_description;
     TextView tv_usage_app_name, tv_usage_app_copyright;
-//    private FirebaseAnalytics mFirebaseAnalytics;
+    MMKV PREFUSAGEStorage = MmkvManager.getDUStorage(),
+            settingsStorage = MmkvManager.getSettingsStorage(),
+            appAppDetailsStorage = MmkvManager.getADStorage();
 
     @Override
     public void onBackPressed() {
@@ -49,8 +74,6 @@ public class UsageActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_usage);
 
-//        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
-
         // 50
         iv_go_forward = findViewById(R.id.iv_go_forward);
         tv_usage_title = findViewById(R.id.tv_usage_title);
@@ -58,22 +81,16 @@ public class UsageActivity extends Activity {
         tv_usage_cu_version = findViewById(R.id.tv_usage_cu_version);
         tv_usage_app_name = findViewById(R.id.tv_usage_app_name);
         tv_usage_app_copyright = findViewById(R.id.tv_usage_app_copyright);
-
 //        tv_usage_share_title = findViewById(R.id.tv_usage_share_title);
 //        tv_usage_share_description = findViewById(R.id.tv_usage_share_decription);
-
         tv_usage_data_title = findViewById(R.id.tv_usage_data_title);
         tv_usage_connection_details = findViewById(R.id.tv_usage_connection_details);
 //        tv_usage_socialmedia_title = findViewById(R.id.tv_usage_socialmedia_title);
 //        tv_usage_appstore_title = findViewById(R.id.tv_usage_appstore_title);
 
-        Typeface RobotoLight = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Light.ttf");
-        Typeface RobotoMedium = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Medium.ttf");
-        Typeface RobotoRegular = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Regular.ttf");
-        Typeface RobotoBold = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Bold.ttf");
-
-        SharedPreferences ConnectionDetails = getSharedPreferences("app_details", 0);
-        String cuVersion = ConnectionDetails.getString("cu_version", "NULL");
+//        SharedPreferences ConnectionDetails = getSharedPreferences("app_details", 0);
+//        String cuVersion = ConnectionDetails.getString("cu_version", "NULL");
+        String cuVersion = appAppDetailsStorage.getString("cu_version", "NULL");
 
         tv_usage_cu_title.setTypeface(RobotoMedium);
         tv_usage_cu_version.setTypeface(RobotoRegular);
@@ -82,7 +99,7 @@ public class UsageActivity extends Activity {
         tv_usage_app_copyright.setTypeface(RobotoRegular);
 
         tv_usage_title.setTypeface(RobotoMedium);
-        tv_usage_cu_version.setText("نسخه برنامه " + cuVersion);
+        tv_usage_cu_version.setText(Version_txt + ' ' + cuVersion);
 
         tv_usage_data_title.setTypeface(RobotoBold);
         TextView tv_usage_time_title = findViewById(R.id.tv_usage_time_title);
@@ -92,9 +109,9 @@ public class UsageActivity extends Activity {
 //        tv_usage_appstore_title.setTypeface(RobotoBold);
 
         // error prone
-        SharedPreferences sp_settings = getSharedPreferences("settings_data", 0);
         try {
-            String device_created = sp_settings.getString("device_created", "null");
+            String device_created = settingsStorage.getString("device_created", "null");
+
             if (!device_created.equals("null")) {
                 long deviceTime = Long.parseLong(device_created);
                 long nowTime = System.currentTimeMillis();
@@ -108,34 +125,31 @@ public class UsageActivity extends Activity {
 
                     String timeString;
                     if (elapsedTime >= 120_000 && elapsedTime < 3_600_000) {
-                        timeString = convertToFarsiNumber(minutes) + " دقیقه اخیر";
+                        timeString = convertToFarsiNumber(minutes) + ' ' + minute_ago;
                     } else if (elapsedTime >= 3_600_000 && elapsedTime < 7_200_000) {
-                        timeString = convertToFarsiNumber(hours) + " ساعت اخیر";
+                        timeString = convertToFarsiNumber(hours) + ' ' + hour_ago;
                     } else if (elapsedTime >= 7_200_000 && elapsedTime < 86_400_000) {
-                        timeString = convertToFarsiNumber(hours) + " ساعت های اخیر";
+                        timeString = convertToFarsiNumber(hours) + ' ' + hours_ago;
                     } else if (elapsedTime >= 86_400_000 && elapsedTime < 172_800_000) {
-                        timeString = convertToFarsiNumber(days) + " روز اخیر";
+                        timeString = convertToFarsiNumber(days) + ' ' + day_ago;
                     } else if (elapsedTime >= 172_800_000) {
-                        timeString = convertToFarsiNumber(days) + " روز های اخیر";
-                    } else if (elapsedTime >= 60_000 && elapsedTime < 120_000) {
-                        timeString = convertToFarsiNumber(minutes) + " دقیقه پیش";
-                    } else if (elapsedTime < 60_000) {
-                        timeString = convertToFarsiNumber(seconds) + " ثانیه پیش";
+                        timeString = convertToFarsiNumber(days) + ' ' + days_ago;
+                    } else if (elapsedTime >= 60_000) {
+                        timeString = convertToFarsiNumber(minutes) + ' ' + minutes_ago;
                     } else {
-                        timeString = "";
+                        timeString = convertToFarsiNumber(seconds) + ' ' + seconds_ago;
                     }
 
-                    tv_usage_cu_title.setText("نصب شده در " + timeString);
+                    tv_usage_cu_title.setText(device_time_txt + ' ' + timeString);
                 }
-
 
             }
         } catch (Exception e) {
-//            Bundle params = new Bundle();
-//            params.putString("device_id", App.device_id);
-//            params.putString("exception", "UA1" + e.toString());
-//            mFirebaseAnalytics.logEvent("app_param_error", params);
-            tv_usage_cu_title.setText("خالی");
+            Bundle params = new Bundle();
+            params.putString("device_id", App.device_id);
+            params.putString("exception", "UA1" + e);
+            LogManager.logEvent(params);
+            tv_usage_cu_title.setText(NA);
         }
 
         // today
@@ -158,12 +172,11 @@ public class UsageActivity extends Activity {
         String YEAR = String.valueOf(Calendar.getInstance().get(Calendar.YEAR));
 
         // get today total usage
-        SharedPreferences settings = getSharedPreferences(Data.PREF_USAGE, 0);
-        long TODAY_USAGE = settings.getLong(TODAY, 0);
-        long YESTERDAY_USAGE = settings.getLong(YESTERDAY, 0);
-        long DAYTHREE_USAGE = settings.getLong(THREEDAYS, 0);
-        long WEEK_USAGE = settings.getLong(WEEK + YEAR, 0);
-        long MONTH_USAGE = settings.getLong(MONTH + YEAR, 0);
+        long TODAY_USAGE = PREFUSAGEStorage.getLong(TODAY, 0);
+        long YESTERDAY_USAGE = PREFUSAGEStorage.getLong(YESTERDAY, 0);
+        long DAYTHREE_USAGE = PREFUSAGEStorage.getLong(THREEDAYS, 0);
+        long WEEK_USAGE = PREFUSAGEStorage.getLong(WEEK + YEAR, 0);
+        long MONTH_USAGE = PREFUSAGEStorage.getLong(MONTH + YEAR, 0);
 
         TextView tv_usage_data_today_title = findViewById(R.id.tv_usage_data_today_title);
         TextView tv_usage_data_today_size = findViewById(R.id.tv_usage_data_today_size);
@@ -173,13 +186,12 @@ public class UsageActivity extends Activity {
         tv_usage_data_today_used.setTypeface(RobotoMedium);
 
         if (TODAY_USAGE < 1000) {
-            tv_usage_data_today_size.setText("صفر کیلوبایت");
-        } else if ((TODAY_USAGE >= 1000) && (TODAY_USAGE <= 1000_000)) {
-            tv_usage_data_today_size.setText(convertToFarsiNumber(TODAY_USAGE / 1000) + "کیلوبایت");
+            tv_usage_data_today_size.setText(default_byte_txt);
+        } else if (TODAY_USAGE <= 1000_000) {
+            tv_usage_data_today_size.setText(convertToFarsiNumber(TODAY_USAGE / 1000) + KB);
         } else {
-            tv_usage_data_today_size.setText(convertToFarsiNumber(TODAY_USAGE / 1000_000) + "مگابایت");
+            tv_usage_data_today_size.setText(convertToFarsiNumber(TODAY_USAGE / 1000_000) + MB);
         }
-
 
         TextView tv_usage_data_yesterday_title = findViewById(R.id.tv_usage_data_yesterday_title);
         TextView tv_usage_data_yesterday_size = findViewById(R.id.tv_usage_data_yesterday_size);
@@ -189,13 +201,13 @@ public class UsageActivity extends Activity {
         tv_usage_data_yesterday_used.setTypeface(RobotoMedium);
 
         if (YESTERDAY_USAGE == 0) {
-            tv_usage_data_yesterday_size.setText("خالی");
+            tv_usage_data_yesterday_size.setText(NA);
         } else if (YESTERDAY_USAGE < 1000) {
-            tv_usage_data_yesterday_size.setText("صفر کیلوبایت");
-        } else if ((YESTERDAY_USAGE >= 1000) && (YESTERDAY_USAGE <= 1000_000)) {
-            tv_usage_data_yesterday_size.setText((YESTERDAY_USAGE / 1000) + "کیلوبایت");
+            tv_usage_data_yesterday_size.setText(default_byte_txt);
+        } else if (YESTERDAY_USAGE <= 1000_000) {
+            tv_usage_data_yesterday_size.setText((YESTERDAY_USAGE / 1000) + KB);
         } else {
-            tv_usage_data_yesterday_size.setText((YESTERDAY_USAGE / 1000_000) + "مگابایت");
+            tv_usage_data_yesterday_size.setText((YESTERDAY_USAGE / 1000_000) + MB);
         }
 
         TextView tv_usage_data_daythree_title = findViewById(R.id.tv_usage_data_daythree_title);
@@ -207,13 +219,13 @@ public class UsageActivity extends Activity {
         tv_usage_data_daythree_title.setText(THREEDAYS);
 
         if (DAYTHREE_USAGE == 0) {
-            tv_usage_data_daythree_size.setText("خالی");
+            tv_usage_data_daythree_size.setText(NA);
         } else if (DAYTHREE_USAGE < 1000) {
-            tv_usage_data_daythree_size.setText("صفر کیلوبایت");
-        } else if ((DAYTHREE_USAGE >= 1000) && (DAYTHREE_USAGE <= 1000_000)) {
-            tv_usage_data_daythree_size.setText(convertToFarsiNumber(DAYTHREE_USAGE / 1000) + "کیلوبایت");
+            tv_usage_data_daythree_size.setText(default_byte_txt);
+        } else if (DAYTHREE_USAGE <= 1000_000) {
+            tv_usage_data_daythree_size.setText(convertToFarsiNumber(DAYTHREE_USAGE / 1000) + KB);
         } else {
-            tv_usage_data_daythree_size.setText(convertToFarsiNumber(DAYTHREE_USAGE / 1000_000) + "مگابایت");
+            tv_usage_data_daythree_size.setText(convertToFarsiNumber(DAYTHREE_USAGE / 1000_000) + MB);
         }
 
         TextView tv_usage_data_thisweek_title = findViewById(R.id.tv_usage_data_thisweek_title);
@@ -223,13 +235,13 @@ public class UsageActivity extends Activity {
         tv_usage_data_thisweek_size.setTypeface(RobotoLight);
         tv_usage_data_thisweek_used.setTypeface(RobotoMedium);
         if (WEEK_USAGE == 0) {
-            tv_usage_data_thisweek_size.setText("خالی");
+            tv_usage_data_thisweek_size.setText(NA);
         } else if (WEEK_USAGE < 1000) {
-            tv_usage_data_thisweek_size.setText("صفر کیلوبایت");
-        } else if ((WEEK_USAGE >= 1000) && (WEEK_USAGE <= 1000_000)) {
-            tv_usage_data_thisweek_size.setText(convertToFarsiNumber(WEEK_USAGE / 1000) + "کیلوبایت");
+            tv_usage_data_thisweek_size.setText(default_byte_txt);
+        } else if (WEEK_USAGE <= 1000_000) {
+            tv_usage_data_thisweek_size.setText(convertToFarsiNumber(WEEK_USAGE / 1000) + KB);
         } else {
-            tv_usage_data_thisweek_size.setText(convertToFarsiNumber(WEEK_USAGE / 1000_000) + "مگابایت");
+            tv_usage_data_thisweek_size.setText(convertToFarsiNumber(WEEK_USAGE / 1000_000) + MB);
         }
 
         TextView tv_usage_data_thismonth_title = findViewById(R.id.tv_usage_data_thismonth_title);
@@ -239,20 +251,18 @@ public class UsageActivity extends Activity {
         tv_usage_data_thismonth_size.setTypeface(RobotoLight);
         tv_usage_data_thismonth_used.setTypeface(RobotoMedium);
         if (MONTH_USAGE == 0) {
-            tv_usage_data_thismonth_size.setText("خالی");
+            tv_usage_data_thismonth_size.setText(NA);
         } else if (MONTH_USAGE < 1000) {
-            tv_usage_data_thismonth_size.setText("صفر کیلوبایت");
-        } else if ((MONTH_USAGE >= 1000) && (MONTH_USAGE <= 1000_000)) {
-            tv_usage_data_thismonth_size.setText(convertToFarsiNumber(MONTH_USAGE / 1000) + "کیلوبایت");
+            tv_usage_data_thismonth_size.setText(default_byte_txt);
+        } else if (MONTH_USAGE <= 1000_000) {
+            tv_usage_data_thismonth_size.setText(convertToFarsiNumber(MONTH_USAGE / 1000) + KB);
         } else {
-            tv_usage_data_thismonth_size.setText(convertToFarsiNumber(MONTH_USAGE / 1000_000) + "مگابایت");
+            tv_usage_data_thismonth_size.setText(convertToFarsiNumber(MONTH_USAGE / 1000_000) + MB);
         }
 
-        sp_settings = getSharedPreferences("daily_usage", 0);
-
-        long time_today = sp_settings.getLong(TODAY + "_time", 0);
-        long time_yesterday = sp_settings.getLong(YESTERDAY + "_time", 0);
-        long time_total = sp_settings.getLong("total_time", 0);
+        long time_today = PREFUSAGEStorage.getLong(TODAY + "_time", 0);
+        long time_yesterday = PREFUSAGEStorage.getLong(YESTERDAY + "_time", 0);
+        long time_total = PREFUSAGEStorage.getLong("total_time", 0);
 
 
         String TodayTime = String.format(getString(R.string.string_of_two_number), (time_today / (1000 * 60 * 60)) % 24) + ":" +
@@ -299,9 +309,9 @@ public class UsageActivity extends Activity {
         tv_usage_time_total_used.setTypeface(RobotoMedium);
         tv_usage_time_total_time.setText(TotalTime);
 
-        long connections_today = sp_settings.getLong(TODAY + "_connections", 0);
-        long connections_yesterday = sp_settings.getLong(YESTERDAY + "_connections", 0);
-        long connections_total = sp_settings.getLong("total_connections", 0);
+        long connections_today = PREFUSAGEStorage.getLong(TODAY + "_connections", 0);
+        long connections_yesterday = PREFUSAGEStorage.getLong(YESTERDAY + "_connections", 0);
+        long connections_total = PREFUSAGEStorage.getLong("total_connections", 0);
 
         TextView tv_usage_connection_today_title = findViewById(R.id.tv_usage_connection_today_title);
         TextView tv_usage_connection_today_size = findViewById(R.id.tv_usage_connection_today_size);
@@ -319,7 +329,6 @@ public class UsageActivity extends Activity {
         tv_usage_connection_yesterday_used.setTypeface(RobotoMedium);
         tv_usage_connection_yesterday_size.setText(String.valueOf(connections_yesterday));
 
-
         TextView tv_usage_connection_total_title = findViewById(R.id.tv_usage_connection_total_title);
         TextView tv_usage_connection_total_size = findViewById(R.id.tv_usage_connection_total_size);
         TextView tv_usage_connection_total_used = findViewById(R.id.tv_usage_connection_total_used);
@@ -328,20 +337,16 @@ public class UsageActivity extends Activity {
         tv_usage_connection_total_used.setTypeface(RobotoMedium);
         tv_usage_connection_total_size.setText(String.valueOf(connections_total));
 
-
         LinearLayout ll_about_forward = findViewById(R.id.ll_about_forward);
-        ll_about_forward.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    finish();
-                    overridePendingTransition(R.anim.anim_slide_in_right, R.anim.anim_slide_out_left);
-                } catch (Exception e) {
-//                    Bundle params = new Bundle();
-//                    params.putString("device_id", App.device_id);
-//                    params.putString("exception", "UA2" + e.toString());
-//                    mFirebaseAnalytics.logEvent("app_param_error", params);
-                }
+        ll_about_forward.setOnClickListener(v -> {
+            try {
+                finish();
+                overridePendingTransition(R.anim.anim_slide_in_right, R.anim.anim_slide_out_left);
+            } catch (Exception e) {
+                Bundle params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "UA2" + e);
+                LogManager.logEvent(params);
             }
         });
 
@@ -353,7 +358,7 @@ public class UsageActivity extends Activity {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
 ////                    params.putString("click", "facebook");
-////                    mFirebaseAnalytics.logEvent("app_param_click", params);
+////                    LogManager.logEvent("app_param_click", params);
 //
 //                    Intent intent = new Intent(Intent.ACTION_VIEW);
 //                    intent.setData(Uri.parse("https://web.facebook.com/OML-100989851252068/"));
@@ -361,8 +366,8 @@ public class UsageActivity extends Activity {
 //                } catch (Exception e) {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
-////                    params.putString("exception", "UA3" + e.toString());
-////                    mFirebaseAnalytics.logEvent("app_param_error", params);
+////                    params.putString("exception", "UA3" + e);
+////                    LogManager.logEvent(params);
 //                }
 //            }
 //        });
@@ -375,7 +380,7 @@ public class UsageActivity extends Activity {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
 ////                    params.putString("click", "vk");
-////                    mFirebaseAnalytics.logEvent("app_param_click", params);
+////                    LogManager.logEvent("app_param_click", params);
 //
 //                    Intent intent = new Intent(Intent.ACTION_VIEW);
 //                    intent.setData(Uri.parse("https://vk.com/public185007005"));
@@ -383,8 +388,8 @@ public class UsageActivity extends Activity {
 //                } catch (Exception e) {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
-////                    params.putString("exception", "UA4" + e.toString());
-////                    mFirebaseAnalytics.logEvent("app_param_error", params);
+////                    params.putString("exception", "UA4" + e);
+////                    LogManager.logEvent(params);
 //                }
 //            }
 //        });
@@ -397,7 +402,7 @@ public class UsageActivity extends Activity {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
 ////                    params.putString("click", "youtube");
-////                    mFirebaseAnalytics.logEvent("app_param_click", params);
+////                    LogManager.logEvent("app_param_click", params);
 //
 //                    Intent intent = new Intent(Intent.ACTION_VIEW);
 //                    intent.setData(Uri.parse("https://www.youtube.com/channel/UCnCrXRM8U75iKvSpO6yXFKQ"));
@@ -405,8 +410,8 @@ public class UsageActivity extends Activity {
 //                } catch (Exception e) {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
-////                    params.putString("exception", "UA5" + e.toString());
-////                    mFirebaseAnalytics.logEvent("app_param_error", params);
+////                    params.putString("exception", "UA5" + e);
+////                    LogManager.logEvent(params);
 //                }
 //            }
 //        });
@@ -419,7 +424,7 @@ public class UsageActivity extends Activity {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
 ////                    params.putString("click", "twitter");
-////                    mFirebaseAnalytics.logEvent("app_param_click", params);
+////                    LogManager.logEvent("app_param_click", params);
 //
 //                    Intent intent = new Intent(Intent.ACTION_VIEW);
 //                    intent.setData(Uri.parse("https://twitter.com/OML69079868"));
@@ -427,8 +432,8 @@ public class UsageActivity extends Activity {
 //                } catch (Exception e) {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
-////                    params.putString("exception", "UA6" + e.toString());
-////                    mFirebaseAnalytics.logEvent("app_param_error", params);
+////                    params.putString("exception", "UA6" + e);
+////                    LogManager.logEvent(params);
 //                }
 //            }
 //        });
@@ -441,7 +446,7 @@ public class UsageActivity extends Activity {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
 ////                    params.putString("click", "instagram");
-////                    mFirebaseAnalytics.logEvent("app_param_click", params);
+////                    LogManager.logEvent("app_param_click", params);
 //
 //                    Intent intent = new Intent(Intent.ACTION_VIEW);
 //                    intent.setData(Uri.parse("https://www.instagram.com/gayankr/"));
@@ -449,8 +454,8 @@ public class UsageActivity extends Activity {
 //                } catch (Exception e) {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
-////                    params.putString("exception", "UA7" + e.toString());
-////                    mFirebaseAnalytics.logEvent("app_param_error", params);
+////                    params.putString("exception", "UA7" + e);
+////                    LogManager.logEvent(params);
 //                }
 //            }
 //        });
@@ -464,7 +469,7 @@ public class UsageActivity extends Activity {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
 ////                    params.putString("click", "play-store");
-////                    mFirebaseAnalytics.logEvent("app_param_click", params);
+////                    LogManager.logEvent("app_param_click", params);
 //
 //                    Intent intent = new Intent(Intent.ACTION_VIEW);
 //                    intent.setData(Uri.parse("market://details?id=com.gold.hamrahvpn"));
@@ -474,8 +479,8 @@ public class UsageActivity extends Activity {
 //                } catch (Exception e) {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
-////                    params.putString("exception", "UA8" + e.toString());
-////                    mFirebaseAnalytics.logEvent("app_param_error", params);
+////                    params.putString("exception", "UA8" + e);
+////                    LogManager.logEvent(params);
 //                }
 //            }
 //        });
@@ -488,7 +493,7 @@ public class UsageActivity extends Activity {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
 ////                    params.putString("click", "amazon");
-////                    mFirebaseAnalytics.logEvent("app_param_click", params);
+////                    LogManager.logEvent("app_param_click", params);
 //
 //                    Intent intent = new Intent(Intent.ACTION_VIEW);
 //                    intent.setData(Uri.parse("https://www.amazon.com/Buzz-VPN-Best-Free-Unlimited/dp/B07T3X677T/ref=BuzzApp"));
@@ -496,8 +501,8 @@ public class UsageActivity extends Activity {
 //                } catch (Exception e) {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
-////                    params.putString("exception", "UA9" + e.toString());
-////                    mFirebaseAnalytics.logEvent("app_param_error", params);
+////                    params.putString("exception", "UA9" + e);
+////                    LogManager.logEvent(params);
 //
 //                }
 //            }
@@ -512,7 +517,7 @@ public class UsageActivity extends Activity {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
 ////                    params.putString("click", "uptodown");
-////                    mFirebaseAnalytics.logEvent("app_param_click", params);
+////                    LogManager.logEvent("app_param_click", params);
 //
 //                    Intent intent = new Intent(Intent.ACTION_VIEW);
 //                    intent.setData(Uri.parse("https://buzz-vpn-fast-free-unlimited-secure-vpn-proxy.en.uptodown.com/android"));
@@ -520,8 +525,8 @@ public class UsageActivity extends Activity {
 //                } catch (Exception e) {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
-////                    params.putString("exception", "UA10" + e.toString());
-////                    mFirebaseAnalytics.logEvent("app_param_error", params);
+////                    params.putString("exception", "UA10" + e);
+////                    LogManager.logEvent(params);
 //                }
 //            }
 //        });
@@ -534,7 +539,7 @@ public class UsageActivity extends Activity {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
 ////                    params.putString("click", "aptoid");
-////                    mFirebaseAnalytics.logEvent("app_param_click", params);
+////                    LogManager.logEvent("app_param_click", params);
 //
 //                    //interstitialBuilder.show(UsageActivity.this);
 //                    Intent intent = new Intent(Intent.ACTION_VIEW);
@@ -543,8 +548,8 @@ public class UsageActivity extends Activity {
 //                } catch (Exception e) {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
-////                    params.putString("exception", "UA11" + e.toString());
-////                    mFirebaseAnalytics.logEvent("app_param_error", params);
+////                    params.putString("exception", "UA11" + e);
+////                    LogManager.logEvent(params);
 //                }
 //            }
 //        });
@@ -558,7 +563,7 @@ public class UsageActivity extends Activity {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
 ////                    params.putString("click", "yandex");
-////                    mFirebaseAnalytics.logEvent("app_param_click", params);
+////                    LogManager.logEvent("app_param_click", params);
 //
 //                    Intent intent = new Intent(Intent.ACTION_VIEW);
 //                    intent.setData(Uri.parse("https://store.yandex.com/"));
@@ -566,8 +571,8 @@ public class UsageActivity extends Activity {
 //                } catch (Exception e) {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
-////                    params.putString("exception", "UA12" + e.toString());
-////                    mFirebaseAnalytics.logEvent("app_param_error", params);
+////                    params.putString("exception", "UA12" + e);
+////                    LogManager.logEvent(params);
 //                }
 //            }
 //        });
@@ -585,7 +590,7 @@ public class UsageActivity extends Activity {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
 ////                    params.putString("click", "faq");
-////                    mFirebaseAnalytics.logEvent("app_param_click", params);
+////                    LogManager.logEvent("app_param_click", params);
 //
 //                    Intent Servers = new Intent(UsageActivity.this, FAQActivity.class);
 //                    startActivity(Servers);
@@ -593,8 +598,8 @@ public class UsageActivity extends Activity {
 //                } catch (Exception e) {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
-////                    params.putString("exception", "UA13" + e.toString());
-////                    mFirebaseAnalytics.logEvent("app_param_error", params);
+////                    params.putString("exception", "UA13" + e);
+////                    LogManager.logEvent(params);
 //                }
 //            }
 //
@@ -612,10 +617,10 @@ public class UsageActivity extends Activity {
                 linearLayoutBattery.setVisibility(View.GONE);
             }
         } catch (Exception e) {
-//            Bundle params = new Bundle();
-//            params.putString("device_id", App.device_id);
-//            params.putString("exception", "UA14" + e.toString());
-//            mFirebaseAnalytics.logEvent("app_param_error", params);
+            Bundle params = new Bundle();
+            params.putString("device_id", App.device_id);
+            params.putString("exception", "UA14" + e);
+            LogManager.logEvent(params);
         }
 
         linearLayoutBattery.setOnClickListener(new View.OnClickListener() {
@@ -624,7 +629,7 @@ public class UsageActivity extends Activity {
                 try {
                     if ("huawei".equalsIgnoreCase(android.os.Build.MANUFACTURER)) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(UsageActivity.this);
-                        builder.setTitle("اجازه دهید برنامه همیشه در پس‌زمینه اجرا شود؟").setMessage("اجازه دادن به Hamrah VPN برای اجرای همیشه در برنامه پس‌زمینه ممکن است مصرف حافظه را کاهش دهد")
+                        builder.setTitle(default_usage_permissions_txt).setMessage(default_usage_permissions_backg_txt)
                                 .setPositiveButton("Allow", new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialogInterface, int i) {
@@ -633,23 +638,24 @@ public class UsageActivity extends Activity {
                                             intent.setComponent(new ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.optimize.process.ProtectActivity"));
                                             startActivity(intent);
                                         } catch (Exception e) {
-//                                            Bundle params = new Bundle();
-//                                            params.putString("device_id", App.device_id);
-//                                            params.putString("exception", "UA15" + e.toString());
-//                                            mFirebaseAnalytics.logEvent("app_param_error", params);
+                                            Bundle params = new Bundle();
+                                            params.putString("device_id", App.device_id);
+                                            params.putString("exception", "UA15" + e);
+                                            LogManager.logEvent(params);
                                         }
                                     }
                                 }).create().show();
-//                        Bundle params = new Bundle();
-//                        params.putString("device_id", App.device_id);
-//                        params.putString("click", "amazon");
-//                        mFirebaseAnalytics.logEvent("app_param_click", params);
+                        Bundle params = new Bundle();
+                        params.putString("device_id", App.device_id);
+                        params.putString("click", "amazon");
+                        params.putString("exception", "app_param_click");
+                        LogManager.logEvent(params);
                     }
                 } catch (Exception e) {
-//                    Bundle params = new Bundle();
-//                    params.putString("device_id", App.device_id);
-//                    params.putString("exception", "UA16" + e.toString());
-//                    mFirebaseAnalytics.logEvent("app_param_error", params);
+                    Bundle params = new Bundle();
+                    params.putString("device_id", App.device_id);
+                    params.putString("exception", "UA16" + e);
+                    LogManager.logEvent(params);
                 }
             }
         });
@@ -666,7 +672,7 @@ public class UsageActivity extends Activity {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
 ////                    params.putString("click", "privacy");
-////                    mFirebaseAnalytics.logEvent("app_param_click", params);
+////                    LogManager.logEvent("app_param_click", params);
 //
 //                    Intent intent = new Intent(Intent.ACTION_VIEW);
 //                    intent.setData(Uri.parse("https://gayanvoice.github.io/oml/buzz/privacypolicy.html"));
@@ -674,8 +680,8 @@ public class UsageActivity extends Activity {
 //                } catch (Exception e) {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
-////                    params.putString("exception", "UA17" + e.toString());
-////                    mFirebaseAnalytics.logEvent("app_param_error", params);
+////                    params.putString("exception", "UA17" + e);
+////                    LogManager.logEvent(params);
 //                }
 //            }
 //        });
@@ -693,19 +699,20 @@ public class UsageActivity extends Activity {
             @Override
             public void onClick(View v) {
                 try {
-//                    Bundle params = new Bundle();
-//                    params.putString("device_id", App.device_id);
-//                    params.putString("click", "contact");
-//                    mFirebaseAnalytics.logEvent("app_param_click", params);
+                    Bundle params = new Bundle();
+                    params.putString("device_id", App.device_id);
+                    params.putString("click", "contact");
+                    params.putString("exception", "app_param_click");
+                    LogManager.logEvent(params);
 
                     Intent Servers = new Intent(UsageActivity.this, ContactActivity.class);
                     startActivity(Servers);
                     overridePendingTransition(R.anim.anim_slide_in_right, R.anim.anim_slide_out_left);
                 } catch (Exception e) {
-//                    Bundle params = new Bundle();
-//                    params.putString("device_id", App.device_id);
-//                    params.putString("exception", "UA18" + e.toString());
-//                    mFirebaseAnalytics.logEvent("app_param_error", params);
+                    Bundle params = new Bundle();
+                    params.putString("device_id", App.device_id);
+                    params.putString("exception", "UA18" + e);
+                    LogManager.logEvent(params);
                 }
             }
         });
@@ -720,7 +727,7 @@ public class UsageActivity extends Activity {
 ////                Bundle params = new Bundle();
 ////                params.putString("device_id", App.device_id);
 ////                params.putString("click", "share");
-////                mFirebaseAnalytics.logEvent("app_param_click", params);
+////                LogManager.logEvent("app_param_click", params);
 //
 //                try {
 //                    Intent sendIntent = new Intent();
@@ -731,8 +738,8 @@ public class UsageActivity extends Activity {
 //                } catch (Exception e) {
 ////                    params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
-////                    params.putString("exception", "UA19" + e.toString());
-////                    mFirebaseAnalytics.logEvent("app_param_error", params);
+////                    params.putString("exception", "UA19" + e);
+////                    LogManager.logEvent(params);
 //                }
 //            }
 //        });
@@ -747,7 +754,6 @@ public class UsageActivity extends Activity {
 //        View viewUsageDark_8 = findViewById(R.id.viewUsageDark_8);
         View viewUsageDark_9 = findViewById(R.id.viewUsageDark_9);
         View viewUsageDark_10 = findViewById(R.id.viewUsageDark_10);
-
 //        View viewUsageLight_1 = findViewById(R.id.viewUsageLight_1);
 //        View viewUsageLight_2 = findViewById(R.id.viewUsageLight_2);
 //        View viewUsageLight_3 = findViewById(R.id.viewUsageLight_3);
@@ -763,39 +769,30 @@ public class UsageActivity extends Activity {
         TextView tv_usage_dark_mode_title = findViewById(R.id.tv_usage_dark_mode_title);
 
         Switch switch_usage_dark_mode = findViewById(R.id.switch_usage_dark_mode);
-        switch_usage_dark_mode.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                try {
-                    SharedPreferences SharedAppDetails = getSharedPreferences("settings_data", 0);
-                    SharedPreferences.Editor Editor = SharedAppDetails.edit();
-                    if (isChecked) {
-                        try {
-                            Editor.putString("dark_mode", "true");
-                        } catch (Exception e) {
-                            Editor.putString("dark_mode", "false");
-                        }
-                    } else {
-                        Editor.putString("dark_mode", "false");
+        switch_usage_dark_mode.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            try {
+                if (isChecked) {
+                    try {
+                        settingsStorage.encode("dark_mode", "true");
+                    } catch (Exception e) {
+                        settingsStorage.encode("dark_mode", "false");
                     }
-                    Editor.apply();
-                } catch (Exception e) {
-//                    Bundle params = new Bundle();
-//                    params.putString("device_id", App.device_id);
-//                    params.putString("exception", "UA20" + e.toString());
-//                    mFirebaseAnalytics.logEvent("app_param_error", params);
+                } else {
+                    settingsStorage.encode("dark_mode", "false");
                 }
+            } catch (Exception e) {
+                Bundle params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "UA20" + e);
+                LogManager.logEvent(params);
             }
-
-
         });
 
         tv_usage_dark_mode_title.setTypeface(RobotoMedium);
         switch_usage_dark_mode.setTypeface(RobotoRegular);
 
-        SharedPreferences SettingsDetails = getSharedPreferences("settings_data", 0);
-        String DarkMode = SettingsDetails.getString("dark_mode", "false");
+        String DarkMode = settingsStorage.getString("dark_mode", "false");
+
         if (DarkMode.equals("true")) {
             linearLayoutUsage.setBackgroundColor(getResources().getColor(R.color.colorDarkBackground));
             tv_usage_title.setTextColor(getResources().getColor(R.color.colorDarkText));
@@ -832,10 +829,10 @@ public class UsageActivity extends Activity {
 //                    viewUsageDark_6.setVisibility(View.GONE);
                 }
             } catch (Exception e) {
-//                Bundle params = new Bundle();
-//                params.putString("device_id", App.device_id);
-//                params.putString("exception", "UA21" + e.toString());
-//                mFirebaseAnalytics.logEvent("app_param_error", params);
+                Bundle params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "UA21" + e);
+                LogManager.logEvent(params);
             }
 
 //            viewUsageLight_1.setVisibility(View.GONE);
@@ -894,10 +891,10 @@ public class UsageActivity extends Activity {
 //                    viewUsageLight_6.setVisibility(View.GONE);
                 }
             } catch (Exception e) {
-//                Bundle params = new Bundle();
-//                params.putString("device_id", App.device_id);
-//                params.putString("exception", "UA22" + e.toString());
-//                mFirebaseAnalytics.logEvent("app_param_error", params);
+                Bundle params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "UA22" + e);
+                LogManager.logEvent(params);
             }
 
 //            viewUsageDark_1.setVisibility(View.GONE);
@@ -923,11 +920,7 @@ public class UsageActivity extends Activity {
             viewUsageLight_10.setVisibility(View.VISIBLE);
         }
 
-        if (DarkMode.equals("true")) {
-            switch_usage_dark_mode.setChecked(true);
-        } else {
-            switch_usage_dark_mode.setChecked(false);
-        }
+        switch_usage_dark_mode.setChecked(DarkMode.equals("true"));
 
     }
 

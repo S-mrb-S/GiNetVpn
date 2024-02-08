@@ -1,10 +1,41 @@
 package com.gold.hamrahvpn;
 
+import static com.gold.hamrahvpn.Data.KB;
+import static com.gold.hamrahvpn.Data.KEY_app_details;
+import static com.gold.hamrahvpn.Data.MB;
+import static com.gold.hamrahvpn.Data.NA;
+import static com.gold.hamrahvpn.Data.PREFUSAGEStorage;
+import static com.gold.hamrahvpn.Data.RobotoBold;
+import static com.gold.hamrahvpn.Data.RobotoLight;
+import static com.gold.hamrahvpn.Data.RobotoMedium;
+import static com.gold.hamrahvpn.Data.RobotoRegular;
+import static com.gold.hamrahvpn.Data.appValStorage;
+import static com.gold.hamrahvpn.Data.connected_btn;
+import static com.gold.hamrahvpn.Data.connected_catch_check_internet_txt;
+import static com.gold.hamrahvpn.Data.connected_catch_txt;
+import static com.gold.hamrahvpn.Data.connected_error_btn;
+import static com.gold.hamrahvpn.Data.connected_error_danger_vpn_txt;
+import static com.gold.hamrahvpn.Data.connected_error_long_txt;
+import static com.gold.hamrahvpn.Data.connected_txt;
+import static com.gold.hamrahvpn.Data.connecting_btn;
+import static com.gold.hamrahvpn.Data.connecting_cancel_btn;
+import static com.gold.hamrahvpn.Data.connecting_txt;
+import static com.gold.hamrahvpn.Data.connectionStorage;
+import static com.gold.hamrahvpn.Data.default_byte_txt;
+import static com.gold.hamrahvpn.Data.default_ziro_txt;
+import static com.gold.hamrahvpn.Data.disconnected_btn;
+import static com.gold.hamrahvpn.Data.disconnected_txt;
+import static com.gold.hamrahvpn.Data.disconnected_txt2;
+import static com.gold.hamrahvpn.Data.isAppDetails;
+import static com.gold.hamrahvpn.Data.isConnectionDetails;
+import static com.gold.hamrahvpn.Data.settingsStorage;
+import static com.gold.hamrahvpn.Data.update_count_txt;
+
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -23,13 +54,14 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
 
 import com.airbnb.lottie.LottieAnimationView;
-import com.gold.hamrahvpn.openvpn.EncryptData;
-//import com.google.firebase.analytics.FirebaseAnalytics;
+import com.gold.hamrahvpn.util.CountryListManager;
+import com.gold.hamrahvpn.util.LogManager;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -39,7 +71,7 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -54,13 +86,8 @@ import de.blinkt.openvpn.core.OpenVPNService;
 import de.blinkt.openvpn.core.ProfileManager;
 import de.blinkt.openvpn.core.VpnStatus;
 
-import static com.gold.hamrahvpn.Data.isAppDetails;
-import static com.gold.hamrahvpn.Data.isConnectionDetails;
-
-
 public class MainActivity extends AppCompatActivity implements VpnStatus.ByteCountListener, VpnStatus.StateListener {
     IOpenVPNServiceInternal mService;
-
     InputStream inputStream;
     BufferedReader bufferedReader;
     ConfigParser cp;
@@ -70,7 +97,7 @@ public class MainActivity extends AppCompatActivity implements VpnStatus.ByteCou
 
     // NEW
     ImageView iv_home, iv_servers, iv_data, iv_progress_bar;
-    LinearLayout ll_text_bubble, ll_main_data, ll_main_today;
+    LinearLayout ll_text_bubble, ll_main_data, ll_main_today, ll_protocol;
     TextView tv_message_top_text, tv_message_bottom_text, tv_data_text, tv_data_name;
     TextView tv_data_today, tv_data_today_text, tv_data_today_name;
 
@@ -83,21 +110,17 @@ public class MainActivity extends AppCompatActivity implements VpnStatus.ByteCou
 
     int progress = 0;
 
-    String TODAY;
-
     CountDownTimer ConnectionTimer;
     TextView tv_main_count_down;
 
     // new
     boolean hasFile = false;
-    String FileID = "NULL", File = "NULL", City = "NULL", Image = "NULL";
-    String DarkMode = "false";
+    String FileID = "NULL", File = "NULL", City = "NULL", Image = "NULL", DarkMode = "false", TODAY;
 
     ConstraintLayout constLayoutMain;
+    public static final EncryptData ENCRYPT_DATA = new EncryptData();
 
-//    private FirebaseAnalytics mFirebaseAnalytics;
-
-    private ServiceConnection mConnection = new ServiceConnection() {
+    private final ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName className, IBinder service) {
             mService = IOpenVPNServiceInternal.Stub.asInterface(service);
@@ -126,9 +149,8 @@ public class MainActivity extends AppCompatActivity implements VpnStatus.ByteCou
     @Override
     protected void onResume() {
         super.onResume();
-
-        SharedPreferences SettingsDetails = getSharedPreferences("settings_data", 0);
-        DarkMode = SettingsDetails.getString("dark_mode", "false");
+        // بازیابی مقدار مربوط به "dark_mode" از MMKV
+        DarkMode = settingsStorage.getString("dark_mode", "false");
         constLayoutMain = findViewById(R.id.constraintLayoutMain);
         if (DarkMode.equals("true")) {
             constLayoutMain.setBackgroundColor(getResources().getColor(R.color.colorDarkBackground));
@@ -145,29 +167,21 @@ public class MainActivity extends AppCompatActivity implements VpnStatus.ByteCou
                 Intent Welcome = new Intent(MainActivity.this, WelcomeActivity.class);
                 startActivity(Welcome);
             } catch (Exception e) {
-//                Bundle params = new Bundle();
-//                params.putString("device_id", App.device_id);
-//                params.putString("exception", "MA1" + e.toString());
-//                mFirebaseAnalytics.logEvent("app_param_error", params);
+                Bundle params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "MA1" + e);
+                LogManager.logEvent(params);
             }
         }
 
-
-        EncryptData En = new EncryptData();
-        SharedPreferences ConnectionDetails = getSharedPreferences("connection_data", 0);
-        FileID = ConnectionDetails.getString("file_id", "خالی");
-        File = En.decrypt(ConnectionDetails.getString("file", "خالی"));
-        City = ConnectionDetails.getString("city", "خالی");
-        Image = ConnectionDetails.getString("image", "خالی");
-
-        if (!FileID.isEmpty()) {
-            hasFile = true;
-        } else {
-            hasFile = false;
-        }
-
-        //Log.e("connection_file", Data.FileString);
-
+        // ایجاد یک نمونه از MMKV با نام "connection_data"
+        // بازیابی مقادیر از MMKV و رمزگشایی آنها
+        FileID = connectionStorage.getString("file_id", NA);
+        File = ENCRYPT_DATA.decrypt(connectionStorage.getString("file", NA));
+        City = connectionStorage.getString("city", NA);
+        Image = connectionStorage.getString("image", NA);
+        // بررسی وجود فایل
+        hasFile = !FileID.isEmpty();
 
         try {
             VpnStatus.addStateListener(this);
@@ -175,14 +189,12 @@ public class MainActivity extends AppCompatActivity implements VpnStatus.ByteCou
             Intent intent = new Intent(this, OpenVPNService.class);
             intent.setAction(OpenVPNService.START_SERVICE);
             bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
-            //bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
         } catch (Exception e) {
-//            Bundle params = new Bundle();
-//            params.putString("device_id", App.device_id);
-//            params.putString("exception", "MA2" + e.toString());
-//            mFirebaseAnalytics.logEvent("app_param_error", params);
+            Bundle params = new Bundle();
+            params.putString("device_id", App.device_id);
+            params.putString("exception", "MA2" + e);
+            LogManager.logEvent(params);
         }
-
 
     }
 
@@ -198,26 +210,28 @@ public class MainActivity extends AppCompatActivity implements VpnStatus.ByteCou
         this.moveTaskToBack(true);
     }
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
-
         Date Today = Calendar.getInstance().getTime();
         SimpleDateFormat df = new SimpleDateFormat("dd-MMM-yyyy");
         TODAY = df.format(Today);
 
-        Typeface RobotoMedium = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Medium.ttf");
-        Typeface RobotoRegular = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Regular.ttf");
-        Typeface RobotoBold = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Bold.ttf");
+        // Top level
+        // Load
+        LogManager.setAppContext(this);
+        RobotoMedium = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Medium.ttf");
+        RobotoRegular = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Regular.ttf");
+        RobotoBold = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Bold.ttf");
+        RobotoLight = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Light.ttf");
 
         iv_home = findViewById(R.id.iv_home);
         iv_servers = findViewById(R.id.iv_servers);
         iv_data = findViewById(R.id.iv_data);
         ll_text_bubble = findViewById(R.id.ll_text_bubble);
+        ll_protocol = findViewById(R.id.ll_protocol_main);
         ll_main_data = findViewById(R.id.ll_main_data);
         ll_main_today = findViewById(R.id.ll_main_today);
         tv_message_top_text = findViewById(R.id.tv_message_top_text);
@@ -231,11 +245,49 @@ public class MainActivity extends AppCompatActivity implements VpnStatus.ByteCou
         tv_data_today_name = findViewById(R.id.tv_data_today_name);
         tv_main_count_down = findViewById(R.id.tv_main_count_down);
 
+        ll_protocol.setOnClickListener(v -> {
+//        String[] strArr = {getString(R.string.protocol_e_stable), getString(R.string.protocol_b_stable), getString(R.string.protocol_a_fast)};
+//        AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.darkDialogs);
+//        builder.setTitle("protocol_type");
+//        builder.setCancelable(true);
+//        builder.setSingleChoiceItems(strArr, AppData.CONNECTION_STEPS, new DialogInterface.OnClickListener() {
+//            @Override // android.content.DialogInterface.OnClickListener
+//            public void onClick(DialogInterface dialogInterface, int i) {
+//                MainFragment.this.m38lambda$initializeAll$2$comamwerdvpnuiMainFragment(dialogInterface, i);
+//            }
+//        });
+//        builder.create().show();
+            AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
+            builder1.setMessage("Write your message here.");
+            builder1.setCancelable(true);
+
+            builder1.setPositiveButton(
+                    "Yes",
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            dialog.cancel();
+                        }
+                    });
+
+            builder1.setNegativeButton(
+                    "No",
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            dialog.cancel();
+                        }
+                    });
+
+            AlertDialog alert11 = builder1.create();
+            alert11.show();
+
+        });
+
         fade_in_1000 = AnimationUtils.loadAnimation(this, R.anim.fade_in_1000);
         fade_out_1000 = AnimationUtils.loadAnimation(this, R.anim.fade_out_1000);
 
         ll_text_bubble.setAnimation(fade_in_1000);
 
+        // set default fonts
         tv_message_top_text.setTypeface(RobotoMedium);
         tv_message_bottom_text.setTypeface(RobotoMedium);
 
@@ -250,268 +302,35 @@ public class MainActivity extends AppCompatActivity implements VpnStatus.ByteCou
         tv_data_today_name.setTypeface(RobotoMedium);
 
         LinearLayout linearLayoutMainHome = findViewById(R.id.linearLayoutMainHome);
-        linearLayoutMainHome.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (Data.isAppDetails) {
-                    Intent About = new Intent(MainActivity.this, UsageActivity.class);
-                    startActivity(About);
-                    overridePendingTransition(R.anim.anim_slide_in_left, R.anim.anim_slide_out_right);
-                }
+        linearLayoutMainHome.setOnClickListener(v -> {
+            if (Data.isAppDetails) {
+                Intent About = new Intent(MainActivity.this, UsageActivity.class);
+                startActivity(About);
+                overridePendingTransition(R.anim.anim_slide_in_left, R.anim.anim_slide_out_right);
             }
         });
 
         LinearLayout linearLayoutMainServers = findViewById(R.id.linearLayoutMainServers);
-        linearLayoutMainServers.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (Data.isConnectionDetails) {
-                    Intent Servers = new Intent(MainActivity.this, ServerActivity.class);
-                    startActivity(Servers);
-                    overridePendingTransition(R.anim.anim_slide_in_right, R.anim.anim_slide_out_left);
-                }
+        linearLayoutMainServers.setOnClickListener(v -> {
+            if (Data.isConnectionDetails) {
+                Intent Servers = new Intent(MainActivity.this, ServerActivity.class);
+                startActivity(Servers);
+                overridePendingTransition(R.anim.anim_slide_in_right, R.anim.anim_slide_out_left);
             }
         });
 
         final Handler handlerToday = new Handler();
-        handlerToday.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                startAnimation(MainActivity.this, R.id.linearLayoutMainHome, R.anim.anim_slide_down, true);
-                startAnimation(MainActivity.this, R.id.linearLayoutMainServers, R.anim.anim_slide_down, true);
-            }
+        handlerToday.postDelayed(() -> {
+            startAnimation(MainActivity.this, R.id.linearLayoutMainHome, R.anim.anim_slide_down, true);
+            startAnimation(MainActivity.this, R.id.linearLayoutMainServers, R.anim.anim_slide_down, true);
         }, 1000);
 
-        btn_connection.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Runnable r = new Runnable() {
-                    @Override
-                    public void run() {
-                        if (!App.isStart) {
-                            if (!hasFile) {
-                                Intent Servers = new Intent(MainActivity.this, ServerActivity.class);
-                                startActivity(Servers);
-                                overridePendingTransition(R.anim.anim_slide_in_right, R.anim.anim_slide_out_left);
-                            } else {
-                                if (hasInternetConnection()) {
-                                    try {
-                                        start_vpn(File);
-                                        final Handler handlerToday = new Handler();
-                                        handlerToday.postDelayed(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                startAnimation(MainActivity.this, R.id.ll_main_today, R.anim.slide_down_800, false);
-                                            }
-                                        }, 500);
-
-                                        final Handler handlerData = new Handler();
-                                        handlerData.postDelayed(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                startAnimation(MainActivity.this, R.id.ll_main_data, R.anim.slide_up_800, true);
-                                            }
-                                        }, 1000);
-
-                                        startAnimation(MainActivity.this, R.id.la_animation, R.anim.fade_in_1000, true);
-                                        la_animation.cancelAnimation();
-                                        la_animation.setAnimation(R.raw.conneting);
-                                        la_animation.playAnimation();
-
-
-                                        iv_progress_bar = findViewById(R.id.iv_progress_bar);
-                                        iv_progress_bar.getLayoutParams().width = 10;
-                                        progress = 10;
-                                        startAnimation(MainActivity.this, R.id.iv_progress_bar, R.anim.fade_in_1000, true);
-
-                                        tv_main_count_down.setVisibility(View.VISIBLE);
-                                        App.CountDown = 30;
-                                        try {
-                                            ConnectionTimer = new CountDownTimer(32_000, 1000) {
-                                                public void onTick(long millisUntilFinished) {
-                                                    App.CountDown = App.CountDown - 1;
-
-                                                    iv_progress_bar.getLayoutParams().width = progress;
-                                                    progress = progress + (int) getResources().getDimension(R.dimen.lo_10dpGrid);
-                                                    tv_main_count_down.setText(String.valueOf(App.CountDown));
-
-                                                    if (App.connection_status == 2) {
-                                                        ConnectionTimer.cancel();
-                                                        SharedPreferences SharedAppDetails = getSharedPreferences("settings_data", 0);
-                                                        SharedPreferences.Editor Editor = SharedAppDetails.edit();
-                                                        Editor.putString("connection_time", String.valueOf(App.CountDown));
-                                                        Editor.apply();
-                                                        if (App.CountDown >= 20) {
-                                                            SharedPreferences settings = getSharedPreferences("settings_data", 0);
-                                                            String Rate = settings.getString("rate", "false");
-                                                            if (Rate.equals("false")) {
-                                                                Handler handler = new Handler();
-                                                                handler.postDelayed(new Runnable() {
-                                                                    @Override
-                                                                    public void run() {
-                                                                        Intent Servers = new Intent(MainActivity.this, ReviewActivity.class);
-                                                                        startActivity(Servers);
-                                                                        overridePendingTransition(R.anim.anim_slide_in_right, R.anim.anim_slide_out_left);
-                                                                    }
-                                                                }, 1000);
-                                                            }
-                                                        }
-
-                                                        startAnimation(MainActivity.this, R.id.tv_main_count_down, R.anim.fade_out_1000, false);
-                                                        startAnimation(MainActivity.this, R.id.iv_progress_bar, R.anim.fade_out_1000, false);
-                                                        startAnimation(MainActivity.this, R.id.la_animation, R.anim.fade_out_1000, false);
-                                                    }
-
-                                                    if (App.CountDown <= 20) {
-                                                        EnableConnectButton = true;
-                                                    }
-
-                                                    if (App.CountDown <= 1) {
-                                                        ConnectionTimer.cancel();
-                                                        startAnimation(MainActivity.this, R.id.tv_main_count_down, R.anim.fade_out_500, false);
-                                                        startAnimation(MainActivity.this, R.id.iv_progress_bar, R.anim.fade_out_500, false);
-                                                        startAnimation(MainActivity.this, R.id.la_animation, R.anim.fade_out_500, false);
-
-                                                        try {
-                                                            stop_vpn();
-
-                                                            final Handler handlerToday = new Handler();
-                                                            handlerToday.postDelayed(new Runnable() {
-                                                                @Override
-                                                                public void run() {
-                                                                    startAnimation(MainActivity.this, R.id.ll_main_data, R.anim.slide_down_800, false);
-                                                                }
-                                                            }, 500);
-
-                                                            final Handler handlerData = new Handler();
-                                                            handlerData.postDelayed(new Runnable() {
-                                                                @Override
-                                                                public void run() {
-                                                                    startAnimation(MainActivity.this, R.id.ll_main_today, R.anim.slide_up_800, true);
-                                                                }
-                                                            }, 1000);
-
-                                                            startAnimation(MainActivity.this, R.id.la_animation, R.anim.fade_in_1000, true);
-                                                            la_animation.cancelAnimation();
-                                                            la_animation.setAnimation(R.raw.ninjainsecure);
-                                                            la_animation.playAnimation();
-
-                                                            App.ShowDailyUsage = true;
-                                                        } catch (Exception e) {
-//                                                            Bundle params = new Bundle();
-//                                                            params.putString("device_id", App.device_id);
-//                                                            params.putString("exception", "MA3" + e.toString());
-//                                                            mFirebaseAnalytics.logEvent("app_param_error", params);
-                                                        }
-                                                        App.isStart = false;
-                                                    }
-
-                                                }
-
-                                                public void onFinish() {
-
-                                                }
-
-                                            };
-                                        } catch (Exception e) {
-//                                            Bundle params = new Bundle();
-//                                            params.putString("device_id", App.device_id);
-//                                            params.putString("exception", "MA4" + e.toString());
-//                                            mFirebaseAnalytics.logEvent("app_param_error", params);
-                                        }
-                                        ConnectionTimer.start();
-
-                                        EnableConnectButton = false;
-                                        App.isStart = true;
-
-                                    } catch (Exception e) {
-//                                        Bundle params = new Bundle();
-//                                        params.putString("device_id", App.device_id);
-//                                        params.putString("exception", "MA5" + e.toString());
-//                                        mFirebaseAnalytics.logEvent("app_param_error", params);
-                                    }
-
-                                }
-                            }
-                        } else {
-                            if (EnableConnectButton) {
-                                try {
-                                    stop_vpn();
-                                    try {
-                                        ConnectionTimer.cancel();
-                                    } catch (Exception ignored) {
-                                        //new SyncFunctions(MainActivity.this, "MA6 " +  e.toString()).set_error_log();
-                                    }
-
-                                    try {
-                                        iv_progress_bar.setVisibility(View.INVISIBLE);
-                                        tv_main_count_down.setVisibility(View.INVISIBLE);
-                                    } catch (Exception ignored) {
-                                        //new SyncFunctions(MainActivity.this, "MA7 " +  e.toString()).set_error_log();
-                                    }
-
-                                    final Handler handlerToday = new Handler();
-                                    handlerToday.postDelayed(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            startAnimation(MainActivity.this, R.id.ll_main_data, R.anim.slide_down_800, false);
-                                            ll_main_data.setVisibility(View.INVISIBLE);
-                                        }
-                                    }, 500);
-
-
-                                    final Handler handlerData = new Handler();
-                                    handlerData.postDelayed(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            startAnimation(MainActivity.this, R.id.ll_main_today, R.anim.slide_up_800, true);
-                                        }
-                                    }, 1000);
-
-                                    startAnimation(MainActivity.this, R.id.la_animation, R.anim.fade_in_1000, true);
-                                    la_animation.cancelAnimation();
-                                    la_animation.setAnimation(R.raw.ninjainsecure);
-                                    la_animation.playAnimation();
-
-                                    SharedPreferences settings = getSharedPreferences("settings_data", 0);
-                                    String ConnectionTime = settings.getString("connection_time", "0");
-                                    if (Long.valueOf(ConnectionTime) >= 20) {
-                                        SharedPreferences.Editor Editor = settings.edit();
-                                        Editor.putString("connection_time", "0");
-                                        Editor.apply();
-                                        String Rate = settings.getString("rate", "false");
-                                        if (Rate.equals("false")) {
-                                            Handler handler = new Handler();
-                                            handler.postDelayed(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    Intent Servers = new Intent(MainActivity.this, ReviewActivity.class);
-                                                    startActivity(Servers);
-                                                    overridePendingTransition(R.anim.anim_slide_in_right, R.anim.anim_slide_out_left);
-
-                                                }
-                                            }, 500);
-                                        }
-                                    }
-
-
-                                    App.ShowDailyUsage = true;
-                                } catch (Exception e) {
-//                                    Bundle params = new Bundle();
-//                                    params.putString("device_id", App.device_id);
-//                                    params.putString("exception", "MA6" + e.toString());
-//                                    mFirebaseAnalytics.logEvent("app_param_error", params);
-                                }
-                                App.isStart = false;
-                            }
-                        }
-                    }
-                };
-                r.run();
-            }
-
+        btn_connection.setOnClickListener(view -> {
+            connectToOpenVpn();
         });
-
+        la_animation.setOnClickListener(view -> {
+            connectToOpenVpn();
+        });
 
         // ui refresh
         thread = new Thread() {
@@ -522,289 +341,382 @@ public class MainActivity extends AppCompatActivity implements VpnStatus.ByteCou
             public void run() {
                 try {
                     while (!thread.isInterrupted()) {
-                        Thread.sleep(500);
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                // set country flag
-                                if (App.abortConnection) {
-                                    App.abortConnection = false;
+                        // important
+                        Thread.sleep(500); // don't delete
 
-                                    if (App.connection_status != 2) {
-                                        App.CountDown = 1;
-                                    }
+                        runOnUiThread(() -> {
+                            // set country flag
+                            if (App.abortConnection) {
+                                App.abortConnection = false;
 
-                                    if (App.connection_status == 2) {
+                                if (App.connection_status != 2) {
+                                    App.CountDown = 1;
+                                }
+
+                                if (App.connection_status == 2) {
+                                    try {
+                                        stop_vpn();
                                         try {
-                                            stop_vpn();
-                                            try {
-                                                ConnectionTimer.cancel();
-                                            } catch (Exception e) {
-//                                                Bundle params = new Bundle();
-//                                                params.putString("device_id", App.device_id);
-//                                                params.putString("exception", "MA7" + e.toString());
-//                                                mFirebaseAnalytics.logEvent("app_param_error", params);
-                                            }
-
-                                            iv_progress_bar.setVisibility(View.INVISIBLE);
-                                            tv_main_count_down.setVisibility(View.INVISIBLE);
-
-                                            final Handler handlerToday = new Handler();
-                                            handlerToday.postDelayed(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    startAnimation(MainActivity.this, R.id.ll_main_data, R.anim.slide_down_800, false);
-                                                    ll_main_data.setVisibility(View.INVISIBLE);
-                                                }
-                                            }, 500);
-
-
-                                            final Handler handlerData = new Handler();
-                                            handlerData.postDelayed(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    startAnimation(MainActivity.this, R.id.ll_main_today, R.anim.slide_up_800, true);
-                                                }
-                                            }, 1000);
-
-                                            startAnimation(MainActivity.this, R.id.la_animation, R.anim.fade_in_1000, true);
-                                            la_animation.cancelAnimation();
-                                            la_animation.setAnimation(R.raw.ninjainsecure);
-                                            la_animation.playAnimation();
-
-                                            App.ShowDailyUsage = true;
+                                            ConnectionTimer.cancel();
                                         } catch (Exception e) {
-//                                            Bundle params = new Bundle();
-//                                            params.putString("device_id", App.device_id);
-//                                            params.putString("exception", "MA8" + e.toString());
-//                                            mFirebaseAnalytics.logEvent("app_param_error", params);
+                                            Bundle params = new Bundle();
+                                            params.putString("device_id", App.device_id);
+                                            params.putString("exception", "MA7" + e);
+                                            LogManager.logEvent(params);
                                         }
-                                        App.isStart = false;
+
+                                        iv_progress_bar.setVisibility(View.INVISIBLE);
+                                        tv_main_count_down.setVisibility(View.INVISIBLE);
+
+                                        final Handler handlerToday12 = new Handler();
+                                        handlerToday12.postDelayed(() -> {
+                                            startAnimation(MainActivity.this, R.id.ll_main_data, R.anim.slide_down_800, false);
+                                            ll_main_data.setVisibility(View.INVISIBLE);
+                                        }, 500);
+
+
+                                        final Handler handlerData = new Handler();
+                                        handlerData.postDelayed(() -> startAnimation(MainActivity.this, R.id.ll_main_today, R.anim.slide_up_800, true), 1000);
+
+                                        startAnimation(MainActivity.this, R.id.la_animation, R.anim.fade_in_1000, true);
+                                        la_animation.cancelAnimation();
+                                        la_animation.setAnimation(R.raw.ninjainsecure);
+                                        la_animation.playAnimation();
+
+                                        App.ShowDailyUsage = true;
+                                    } catch (Exception e) {
+                                        Bundle params = new Bundle();
+                                        params.putString("device_id", App.device_id);
+                                        params.putString("exception", "MA8" + e);
+                                        LogManager.logEvent(params);
                                     }
-
+                                    App.isStart = false;
                                 }
 
-                                switch (Image) {
-                                    case "japan":
-                                        iv_servers.setImageResource(R.drawable.ic_flag_japan);
-                                        break;
-                                    case "russia":
-                                        iv_servers.setImageResource(R.drawable.ic_flag_russia);
-                                        break;
-                                    case "southkorea":
-                                        iv_servers.setImageResource(R.drawable.ic_flag_south_korea);
-                                        break;
-                                    case "thailand":
-                                        iv_servers.setImageResource(R.drawable.ic_flag_thailand);
-                                        break;
-                                    case "vietnam":
-                                        iv_servers.setImageResource(R.drawable.ic_flag_vietnam);
-                                        break;
-                                    case "unitedstates":
-                                        iv_servers.setImageResource(R.drawable.ic_flag_united_states);
-                                        break;
-                                    case "unitedkingdom":
-                                        iv_servers.setImageResource(R.drawable.ic_flag_united_kingdom);
-                                        break;
-                                    case "singapore":
-                                        iv_servers.setImageResource(R.drawable.ic_flag_singapore);
-                                        break;
-                                    case "france":
-                                        iv_servers.setImageResource(R.drawable.ic_flag_france);
-                                        break;
-                                    case "germany":
-                                        iv_servers.setImageResource(R.drawable.ic_flag_germany);
-                                        break;
-                                    case "canada":
-                                        iv_servers.setImageResource(R.drawable.ic_flag_canada);
-                                        break;
-                                    case "luxemburg":
-                                        iv_servers.setImageResource(R.drawable.ic_flag_luxemburg);
-                                        break;
-                                    case "netherlands":
-                                        iv_servers.setImageResource(R.drawable.ic_flag_netherlands);
-                                        break;
-                                    case "spain":
-                                        iv_servers.setImageResource(R.drawable.ic_flag_spain);
-                                        break;
-                                    case "finland":
-                                        iv_servers.setImageResource(R.drawable.ic_flag_finland);
-                                        break;
-                                    case "poland":
-                                        iv_servers.setImageResource(R.drawable.ic_flag_poland);
-                                        break;
-                                    case "australia":
-                                        iv_servers.setImageResource(R.drawable.ic_flag_australia);
-                                        break;
-                                    case "italy":
-                                        iv_servers.setImageResource(R.drawable.ic_flag_italy);
-                                        break;
-                                    default:
-                                        iv_servers.setImageResource(R.drawable.ic_flag_unknown_mali);
-                                        break;
+                            }
 
+                            CountryListManager.OpenVpnSetServerList(Image, iv_servers);
+
+                            // set connection button
+                            if (hasFile) {
+                                if (App.connection_status == 0) {
+                                    // disconnected
+                                    btn_connection.setText(disconnected_btn);
+                                    btn_connection.setBackground(ContextCompat.getDrawable(MainActivity.this, R.drawable.button_connect));
+
+                                } else if (App.connection_status == 1) {
+                                    // connecting
+                                    if (EnableConnectButton) {
+                                        btn_connection.setText(connecting_cancel_btn);
+                                        btn_connection.setBackground(ContextCompat.getDrawable(MainActivity.this, R.drawable.button_retry));
+                                    } else {
+                                        btn_connection.setText(connecting_btn);
+                                        btn_connection.setBackground(ContextCompat.getDrawable(MainActivity.this, R.drawable.button_retry));
+                                    }
+                                } else if (App.connection_status == 2) {
+                                    // connected
+                                    btn_connection.setText(connected_btn);
+                                    btn_connection.setBackground(ContextCompat.getDrawable(MainActivity.this, R.drawable.button_disconnect));
+                                } else if (App.connection_status == 3) {
+                                    // connected
+                                    btn_connection.setText(connected_error_btn);
+                                    btn_connection.setBackground(ContextCompat.getDrawable(MainActivity.this, R.drawable.button_retry));
                                 }
+                            }
 
-                                // set connection button
-                                if (hasFile) {
+                            // set message text
+                            if (hasFile) {
+                                if (hasInternetConnection()) {
                                     if (App.connection_status == 0) {
                                         // disconnected
-                                        btn_connection.setText("روشن شدن");
-                                        btn_connection.setBackground(ContextCompat.getDrawable(MainActivity.this, R.drawable.button_connect));
-
+                                        tv_message_top_text.setText(disconnected_txt);
+                                        tv_message_bottom_text.setText(disconnected_txt2);
                                     } else if (App.connection_status == 1) {
                                         // connecting
-                                        if (EnableConnectButton) {
-                                            btn_connection.setText("لغو");
-                                            btn_connection.setBackground(ContextCompat.getDrawable(MainActivity.this, R.drawable.button_retry));
+                                        tv_message_top_text.setText(connecting_txt + ' ' + City);
+                                        tv_message_bottom_text.setText(VpnStatus.getLastCleanLogMessage(MainActivity.this));
+                                    } else if (App.connection_status == 2) {
+                                        // connected
+                                        tv_message_top_text.setText(connected_txt + ' ' + City);
+                                        tv_message_bottom_text.setText(Data.StringCountDown);
+                                    } else if (App.connection_status == 3) {
+                                        // connected
+                                        tv_message_top_text.setText(connected_error_danger_vpn_txt);
+                                        tv_message_bottom_text.setText(connected_error_long_txt);
+                                    }
+                                } else {
+                                    tv_message_top_text.setText(connected_catch_txt);
+                                    tv_message_bottom_text.setText(connected_catch_check_internet_txt);
+                                }
+                            }
+
+                            // show data limit
+                            if (ShowData) {
+                                ShowData = false;
+                                if (App.connection_status == 0) {
+                                    final Handler handlerData = new Handler();
+                                    handlerData.postDelayed(() -> startAnimation(MainActivity.this, R.id.ll_main_today, R.anim.slide_up_800, true), 1000);
+                                } else if (App.connection_status == 1) {
+                                    final Handler handlerData = new Handler();
+                                    handlerData.postDelayed(() -> startAnimation(MainActivity.this, R.id.ll_main_today, R.anim.slide_up_800, true), 1000);
+                                } else if (App.connection_status == 2) {
+                                    final Handler handlerData = new Handler();
+                                    handlerData.postDelayed(() -> startAnimation(MainActivity.this, R.id.ll_main_data, R.anim.slide_up_800, true), 1000);
+                                } else if (App.connection_status == 3) {
+                                    // connected
+                                    final Handler handlerData = new Handler();
+                                    handlerData.postDelayed(() -> startAnimation(MainActivity.this, R.id.ll_main_today, R.anim.slide_up_800, true), 1000);
+                                }
+                            }
+
+                            // get daily usage
+                            if (hasFile) {
+                                if (App.connection_status == 0) {
+                                    // disconnected
+                                    if (App.ShowDailyUsage) {
+                                        App.ShowDailyUsage = false;
+                                        // بازیابی مقدار مربوط به کلید "today"
+                                        long long_usage_today = PREFUSAGEStorage.getLong(TODAY, 0);
+
+                                        if (long_usage_today < 1000) {
+                                            tv_data_today_text.setText(default_ziro_txt + ' ' + KB);
+                                        } else if (long_usage_today <= 1000_000) {
+                                            tv_data_today_text.setText((long_usage_today / 1000) + KB);
                                         } else {
-                                            btn_connection.setText("درحال اتصال");
-                                            btn_connection.setBackground(ContextCompat.getDrawable(MainActivity.this, R.drawable.button_retry));
+                                            tv_data_today_text.setText((long_usage_today / 1000_000) + MB);
                                         }
-                                    } else if (App.connection_status == 2) {
-                                        // connected
-                                        btn_connection.setText("قطع اتصال");
-                                        btn_connection.setBackground(ContextCompat.getDrawable(MainActivity.this, R.drawable.button_disconnect));
-                                    } else if (App.connection_status == 3) {
-                                        // connected
-                                        btn_connection.setText("برنامه های VPN را حذف کنید");
-                                        btn_connection.setBackground(ContextCompat.getDrawable(MainActivity.this, R.drawable.button_retry));
-
-                                    }
-
-                                }
-
-                                // set message text
-                                if (hasFile) {
-                                    if (hasInternetConnection()) {
-                                        if (App.connection_status == 0) {
-                                            // disconnected
-                                            tv_message_top_text.setText("اتصال اماده است");
-                                            tv_message_bottom_text.setText("برای روشن شدن ضربه بزنید !");
-
-                                        } else if (App.connection_status == 1) {
-                                            // connecting
-                                            tv_message_top_text.setText("در حال اتصال به " + City);
-                                            tv_message_bottom_text.setText(VpnStatus.getLastCleanLogMessage(MainActivity.this));
-
-                                        } else if (App.connection_status == 2) {
-                                            // connected
-                                            tv_message_top_text.setText("اتصال برقرار شد " + City);
-                                            tv_message_bottom_text.setText(Data.StringCountDown);
-
-
-                                        } else if (App.connection_status == 3) {
-                                            // connected
-                                            tv_message_top_text.setText("برنامه های خطرناک VPN پیدا شد");
-                                            tv_message_bottom_text.setText("دستگاه شما در معرض خطر است، سایر برنامه های VPN را حذف کنید! برنامه های خطرناک VPN بالقوه اتصال اینترنت را مسدود می کنند");
-                                        }
-                                    } else {
-                                        tv_message_top_text.setText("اتصال امکان پذیر نیست");
-                                        tv_message_bottom_text.setText("اینترنت خود را بررسی کنید");
-                                    }
-
-                                }
-
-                                // show data limit
-                                if (ShowData) {
-                                    ShowData = false;
-                                    if (App.connection_status == 0) {
-                                        final Handler handlerData = new Handler();
-                                        handlerData.postDelayed(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                startAnimation(MainActivity.this, R.id.ll_main_today, R.anim.slide_up_800, true);
-                                            }
-                                        }, 1000);
-                                    } else if (App.connection_status == 1) {
-                                        final Handler handlerData = new Handler();
-                                        handlerData.postDelayed(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                startAnimation(MainActivity.this, R.id.ll_main_today, R.anim.slide_up_800, true);
-                                            }
-                                        }, 1000);
-                                    } else if (App.connection_status == 2) {
-                                        final Handler handlerData = new Handler();
-                                        handlerData.postDelayed(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                startAnimation(MainActivity.this, R.id.ll_main_data, R.anim.slide_up_800, true);
-                                            }
-                                        }, 1000);
-                                    } else if (App.connection_status == 3) {
-                                        // connected
-                                        final Handler handlerData = new Handler();
-                                        handlerData.postDelayed(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                startAnimation(MainActivity.this, R.id.ll_main_today, R.anim.slide_up_800, true);
-                                            }
-                                        }, 1000);
                                     }
                                 }
+                            }
 
-                                // get daily usage
-                                if (hasFile) {
+                            // show animation
+                            if (hasFile) {
+                                if (ShowAnimation) {
+                                    ShowAnimation = false;
                                     if (App.connection_status == 0) {
                                         // disconnected
-                                        if (App.ShowDailyUsage) {
-                                            App.ShowDailyUsage = false;
-                                            String PREF_USAGE = "daily_usage";
-                                            SharedPreferences settings = getSharedPreferences(PREF_USAGE, 0);
-                                            long long_usage_today = settings.getLong(TODAY, 0);
-
-                                            if (long_usage_today < 1000) {
-                                                tv_data_today_text.setText("صفر کیلوبایت");
-                                            } else if ((long_usage_today >= 1000) && (long_usage_today <= 1000_000)) {
-                                                tv_data_today_text.setText((long_usage_today / 1000) + "کیلوبایت");
-                                            } else {
-                                                tv_data_today_text.setText((long_usage_today / 1000_000) + "مگابایت");
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // show animation
-                                if (hasFile) {
-                                    if (ShowAnimation) {
-                                        ShowAnimation = false;
-                                        if (App.connection_status == 0) {
-                                            // disconnected
-                                            startAnimation(MainActivity.this, R.id.la_animation, R.anim.fade_in_1000, true);
-                                            la_animation.cancelAnimation();
-                                            la_animation.setAnimation(R.raw.ninjainsecure);
-                                            la_animation.playAnimation();
-
-                                        } else if (App.connection_status == 1) {
-                                            // connecting
-                                            startAnimation(MainActivity.this, R.id.la_animation, R.anim.fade_in_1000, true);
-                                            la_animation.cancelAnimation();
-                                            la_animation.setAnimation(R.raw.conneting);
-                                            la_animation.playAnimation();
-
-                                        } else if (App.connection_status == 3) {
-                                            // connected
-                                            startAnimation(MainActivity.this, R.id.la_animation, R.anim.fade_in_1000, true);
-                                            la_animation.cancelAnimation();
-                                            la_animation.setAnimation(R.raw.ninjainsecure);
-                                            la_animation.playAnimation();
-                                        }
+                                        startAnimation(MainActivity.this, R.id.la_animation, R.anim.fade_in_1000, true);
+                                        la_animation.cancelAnimation();
+                                        la_animation.setAnimation(R.raw.ninjainsecure);
+                                        la_animation.playAnimation();
+                                    } else if (App.connection_status == 1) {
+                                        // connecting
+                                        startAnimation(MainActivity.this, R.id.la_animation, R.anim.fade_in_1000, true);
+                                        la_animation.cancelAnimation();
+                                        la_animation.setAnimation(R.raw.conneting);
+                                        la_animation.playAnimation();
+                                    } else if (App.connection_status == 3) {
+                                        // connected
+                                        startAnimation(MainActivity.this, R.id.la_animation, R.anim.fade_in_1000, true);
+                                        la_animation.cancelAnimation();
+                                        la_animation.setAnimation(R.raw.ninjainsecure);
+                                        la_animation.playAnimation();
                                     }
                                 }
                             }
                         });
                     }
                 } catch (InterruptedException e) {
-//                    Bundle params = new Bundle();
-//                    params.putString("device_id", App.device_id);
-//                    params.putString("exception", "MA9" + e.toString());
-//                    mFirebaseAnalytics.logEvent("app_param_error", params);
+                    Bundle params = new Bundle();
+                    params.putString("device_id", App.device_id);
+                    params.putString("exception", "MA9" + e);
+                    LogManager.logEvent(params);
                 }
             }
         };
         thread.start();
 
+    }
+
+    private void connectToOpenVpn() {
+        Runnable r = () -> {
+            if (!App.isStart) {
+                if (!hasFile) {
+                    Intent Servers = new Intent(MainActivity.this, ServerActivity.class);
+                    startActivity(Servers);
+                    overridePendingTransition(R.anim.anim_slide_in_right, R.anim.anim_slide_out_left);
+                } else {
+                    if (hasInternetConnection()) {
+                        try {
+                            start_vpn(File);
+                            final Handler handlerToday1 = new Handler();
+                            handlerToday1.postDelayed(() -> startAnimation(MainActivity.this, R.id.ll_main_today, R.anim.slide_down_800, false), 500);
+
+                            final Handler handlerData = new Handler();
+                            handlerData.postDelayed(() -> startAnimation(MainActivity.this, R.id.ll_main_data, R.anim.slide_up_800, true), 1000);
+
+                            startAnimation(MainActivity.this, R.id.la_animation, R.anim.fade_in_1000, true);
+                            la_animation.cancelAnimation();
+                            la_animation.setAnimation(R.raw.conneting);
+                            la_animation.playAnimation();
+
+                            iv_progress_bar = findViewById(R.id.iv_progress_bar);
+                            iv_progress_bar.getLayoutParams().width = 10;
+                            progress = 10;
+                            startAnimation(MainActivity.this, R.id.iv_progress_bar, R.anim.fade_in_1000, true);
+
+                            tv_main_count_down.setVisibility(View.VISIBLE);
+                            App.CountDown = 30;
+                            try {
+                                ConnectionTimer = new CountDownTimer(32_000, 1000) {
+                                    public void onTick(long millisUntilFinished) {
+                                        App.CountDown = App.CountDown - 1;
+
+                                        iv_progress_bar.getLayoutParams().width = progress;
+                                        progress = progress + (int) getResources().getDimension(R.dimen.lo_10dpGrid);
+                                        tv_main_count_down.setText(String.valueOf(App.CountDown));
+
+                                        if (App.connection_status == 2) {
+                                            ConnectionTimer.cancel();
+                                            // ویرایش کردن مقدار "connection_time" در MMKV
+                                            settingsStorage.putString("connection_time", String.valueOf(App.CountDown));
+                                            // بررسی شرط
+                                            if (App.CountDown >= 20) {
+                                                // بازیابی مقدار "rate" از MMKV
+                                                String rate = settingsStorage.getString("rate", "false");
+                                                // بررسی شرط
+                                                if (rate.equals("false")) {
+                                                    // ایجاد یک Handler برای تاخیر
+                                                    Handler handler = new Handler();
+                                                    handler.postDelayed(() -> {
+                                                        // ایجاد Intent برای رفتن به ReviewActivity
+                                                        Intent servers = new Intent(MainActivity.this, ReviewActivity.class);
+                                                        startActivity(servers);
+                                                        overridePendingTransition(R.anim.anim_slide_in_right, R.anim.anim_slide_out_left);
+                                                    }, 1000);
+                                                }
+                                            }
+
+                                            startAnimation(MainActivity.this, R.id.tv_main_count_down, R.anim.fade_out_1000, false);
+                                            startAnimation(MainActivity.this, R.id.iv_progress_bar, R.anim.fade_out_1000, false);
+                                            startAnimation(MainActivity.this, R.id.la_animation, R.anim.fade_out_1000, false);
+                                        }
+
+                                        if (App.CountDown <= 20) {
+                                            EnableConnectButton = true;
+                                        }
+
+                                        if (App.CountDown <= 1) {
+                                            ConnectionTimer.cancel();
+                                            startAnimation(MainActivity.this, R.id.tv_main_count_down, R.anim.fade_out_500, false);
+                                            startAnimation(MainActivity.this, R.id.iv_progress_bar, R.anim.fade_out_500, false);
+                                            startAnimation(MainActivity.this, R.id.la_animation, R.anim.fade_out_500, false);
+
+                                            try {
+                                                stop_vpn();
+
+                                                final Handler handlerToday1 = new Handler();
+                                                handlerToday1.postDelayed(() -> startAnimation(MainActivity.this, R.id.ll_main_data, R.anim.slide_down_800, false), 500);
+
+                                                final Handler handlerData = new Handler();
+                                                handlerData.postDelayed(() -> startAnimation(MainActivity.this, R.id.ll_main_today, R.anim.slide_up_800, true), 1000);
+
+                                                startAnimation(MainActivity.this, R.id.la_animation, R.anim.fade_in_1000, true);
+                                                la_animation.cancelAnimation();
+                                                la_animation.setAnimation(R.raw.ninjainsecure);
+                                                la_animation.playAnimation();
+
+                                                App.ShowDailyUsage = true;
+                                            } catch (Exception e) {
+                                                Bundle params = new Bundle();
+                                                params.putString("device_id", App.device_id);
+                                                params.putString("exception", "MA3" + e);
+                                                LogManager.logEvent(params);
+                                            }
+                                            App.isStart = false;
+                                        }
+
+                                    }
+
+                                    public void onFinish() {
+                                    }
+
+                                };
+                            } catch (Exception e) {
+                                Bundle params = new Bundle();
+                                params.putString("device_id", App.device_id);
+                                params.putString("exception", "MA4" + e);
+                                LogManager.logEvent(params);
+                            }
+                            ConnectionTimer.start();
+
+                            EnableConnectButton = false;
+                            App.isStart = true;
+
+                        } catch (Exception e) {
+                            Bundle params = new Bundle();
+                            params.putString("device_id", App.device_id);
+                            params.putString("exception", "MA5" + e);
+                            LogManager.logEvent(params);
+                        }
+
+                    }
+                }
+            } else {
+                if (EnableConnectButton) {
+                    try {
+                        stop_vpn();
+                        try {
+                            ConnectionTimer.cancel();
+                        } catch (Exception e) {
+//                                new SyncFunctions(MainActivity.this, "MA6 " +  e.toString()).set_error_log();
+                            Bundle params = new Bundle();
+                            params.putString("device_id", App.device_id);
+                            params.putString("exception", "MA6" + e);
+                            LogManager.logEvent(params);
+                        }
+
+                        try {
+                            iv_progress_bar.setVisibility(View.INVISIBLE);
+                            tv_main_count_down.setVisibility(View.INVISIBLE);
+                        } catch (Exception e) {
+                            //new SyncFunctions(MainActivity.this, "MA7 " +  e.toString()).set_error_log();
+                            Bundle params = new Bundle();
+                            params.putString("device_id", App.device_id);
+                            params.putString("exception", "MA7" + e);
+                            LogManager.logEvent(params);
+                        }
+
+                        final Handler handlerToday1 = new Handler();
+                        handlerToday1.postDelayed(() -> {
+                            startAnimation(MainActivity.this, R.id.ll_main_data, R.anim.slide_down_800, false);
+                            ll_main_data.setVisibility(View.INVISIBLE);
+                        }, 500);
+
+                        final Handler handlerData = new Handler();
+                        handlerData.postDelayed(() -> startAnimation(MainActivity.this, R.id.ll_main_today, R.anim.slide_up_800, true), 1000);
+
+                        startAnimation(MainActivity.this, R.id.la_animation, R.anim.fade_in_1000, true);
+                        la_animation.cancelAnimation();
+                        la_animation.setAnimation(R.raw.ninjainsecure);
+                        la_animation.playAnimation();
+
+                        String ConnectionTime = settingsStorage.getString("connection_time", "0");
+                        if (Long.parseLong(ConnectionTime) >= 20) {
+                            settingsStorage.putString("connection_time", "0");
+                            String rate = settingsStorage.getString("rate", "false");
+                            if (rate.equals("false")) {
+                                Handler handler = new Handler();
+                                handler.postDelayed(() -> {
+                                    Intent servers = new Intent(MainActivity.this, ReviewActivity.class);
+                                    startActivity(servers);
+                                    overridePendingTransition(R.anim.anim_slide_in_right, R.anim.anim_slide_out_left);
+                                }, 500);
+                            }
+                        }
+
+                        App.ShowDailyUsage = true;
+                    } catch (Exception e) {
+                        Bundle params = new Bundle();
+                        params.putString("device_id", App.device_id);
+                        params.putString("exception", "MA6" + e);
+                        LogManager.logEvent(params);
+                    }
+                    App.isStart = false;
+                }
+            }
+        };
+        r.run();
     }
 
     private boolean hasInternetConnection() {
@@ -822,29 +734,33 @@ public class MainActivity extends AppCompatActivity implements VpnStatus.ByteCou
                         haveConnectedMobile = true;
             }
         } catch (Exception e) {
-//            Bundle params = new Bundle();
-//            params.putString("device_id", App.device_id);
-//            params.putString("exception", "MA10" + e.toString());
-//            mFirebaseAnalytics.logEvent("app_param_error", params);
+            Bundle params = new Bundle();
+            params.putString("device_id", App.device_id);
+            params.putString("exception", "MA10" + e);
+            LogManager.logEvent(params);
         }
 
         return haveConnectedWifi || haveConnectedMobile;
     }
 
+    /**
+     * 1 - convert SharedPreferences to MMKV
+     * 2 - fix Daily Usage
+     */
     private void start_vpn(String VPNFile) {
-        SharedPreferences sp_settings;
-        sp_settings = getSharedPreferences("daily_usage", 0);
-        long connection_today = sp_settings.getLong(TODAY + "_connections", 0);
-        long connection_total = sp_settings.getLong("total_connections", 0);
-        SharedPreferences.Editor editor = sp_settings.edit();
-        editor.putLong(TODAY + "_connections", connection_today + 1);
-        editor.putLong("total_connections", connection_total + 1);
-        editor.apply();
+        // بازیابی مقادیر
+        long connection_today = PREFUSAGEStorage.getLong(TODAY + "_connections", 0);
+        long connection_total = PREFUSAGEStorage.getLong("total_connections", 0);
 
-//        Bundle params = new Bundle();
-//        params.putString("device_id", App.device_id);
-//        params.putString("city", City);
-//        mFirebaseAnalytics.logEvent("app_param_country", params);
+        // ویرایش کردن مقادیر
+        PREFUSAGEStorage.putLong(TODAY + "_connections", connection_today + 1);
+        PREFUSAGEStorage.putLong("total_connections", connection_total + 1);
+
+        Bundle params = new Bundle();
+        params.putString("device_id", App.device_id);
+        params.putString("city", City);
+        params.putString("params", "app_param_country");
+        LogManager.logEvent(params);
 
         App.connection_status = 1;
         try {
@@ -852,39 +768,38 @@ public class MainActivity extends AppCompatActivity implements VpnStatus.ByteCou
             bufferedReader = null;
             try {
                 assert VPNFile != null;
-                inputStream = new ByteArrayInputStream(VPNFile.getBytes(Charset.forName("UTF-8")));
+                inputStream = new ByteArrayInputStream(VPNFile.getBytes(StandardCharsets.UTF_8));
             } catch (Exception e) {
-//                params = new Bundle();
-//                params.putString("device_id", App.device_id);
-//                params.putString("exception", "MA11" + e.toString());
-//                mFirebaseAnalytics.logEvent("app_param_error", params);
+                params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "MA11" + e);
+                LogManager.logEvent(params);
             }
 
             try { // M8
                 assert inputStream != null;
                 bufferedReader = new BufferedReader(new InputStreamReader(inputStream/*, Charset.forName("UTF-8")*/));
             } catch (Exception e) {
-//                params = new Bundle();
-//                params.putString("device_id", App.device_id);
-//                params.putString("exception", "MA12" + e.toString());
-//                mFirebaseAnalytics.logEvent("app_param_error", params);
+                params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "MA12" + e);
+                LogManager.logEvent(params);
             }
 
             cp = new ConfigParser();
             try {
                 cp.parseConfig(bufferedReader);
             } catch (Exception e) {
-//                params = new Bundle();
-//                params.putString("device_id", App.device_id);
-//                params.putString("exception", "MA13" + e.toString());
-//                mFirebaseAnalytics.logEvent("app_param_error", params);
+                params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "MA13" + e);
+                LogManager.logEvent(params);
             }
             vp = cp.convertProfile();
             vp.mAllowedAppsVpnAreDisallowed = true;
 
-            EncryptData En = new EncryptData();
-            SharedPreferences AppValues = getSharedPreferences("app_values", 0);
-            String AppDetailsValues = En.decrypt(AppValues.getString("app_details", "خالی"));
+            String AppValues = appValStorage.getString(KEY_app_details, NA);
+            String AppDetailsValues = ENCRYPT_DATA.decrypt(AppValues);
 
             try {
                 JSONObject json_response = new JSONObject(AppDetailsValues);
@@ -895,20 +810,19 @@ public class MainActivity extends AppCompatActivity implements VpnStatus.ByteCou
                     Log.e("packages", json_object.getString("app"));
                 }
             } catch (JSONException e) {
-//                params = new Bundle();
-//                params.putString("device_id", App.device_id);
-//                params.putString("exception", "MA14" + e.toString());
-//                mFirebaseAnalytics.logEvent("app_param_error", params);
+                params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "MA14" + e);
+                LogManager.logEvent(params);
             }
-
 
             try {
                 vp.mName = Build.MODEL;
             } catch (Exception e) {
-//                params = new Bundle();
-//                params.putString("device_id", App.device_id);
-//                params.putString("exception", "MA15" + e.toString());
-//                mFirebaseAnalytics.logEvent("app_param_error", params);
+                params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "MA15" + e);
+                LogManager.logEvent(params);
             }
 
             vp.mUsername = Data.FileUsername;
@@ -926,16 +840,16 @@ public class MainActivity extends AppCompatActivity implements VpnStatus.ByteCou
                 startActivity(intent);
                 App.isStart = false;
             } catch (Exception e) {
-//                params = new Bundle();
-//                params.putString("device_id", App.device_id);
-//                params.putString("exception", "MA16" + e.toString());
-//                mFirebaseAnalytics.logEvent("app_param_error", params);
+                params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "MA16" + e);
+                LogManager.logEvent(params);
             }
         } catch (Exception e) {
-//            params = new Bundle();
-//            params.putString("device_id", App.device_id);
-//            params.putString("exception", "MA17" + e.toString());
-//            mFirebaseAnalytics.logEvent("app_param_error", params);
+            params = new Bundle();
+            params.putString("device_id", App.device_id);
+            params.putString("exception", "MA17" + e);
+            LogManager.logEvent(params);
         }
     }
 
@@ -943,36 +857,30 @@ public class MainActivity extends AppCompatActivity implements VpnStatus.ByteCou
         App.connection_status = 0;
         OpenVPNService.abortConnectionVPN = true;
         ProfileManager.setConntectedVpnProfileDisconnected(this);
-
         if (mService != null) {
-
             try {
                 mService.stopVPN(false);
             } catch (RemoteException e) {
-//                Bundle params = new Bundle();
-//                params.putString("device_id", App.device_id);
-//                params.putString("exception", "MA18" + e.toString());
-//                mFirebaseAnalytics.logEvent("app_param_error", params);
+                Bundle params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "MA18" + e);
+                LogManager.logEvent(params);
             }
-
             try {
                 pm = ProfileManager.getInstance(this);
                 vp = pm.getProfileByName(Build.MODEL);
                 pm.removeProfile(this, vp);
             } catch (Exception e) {
-//                Bundle params = new Bundle();
-//                params.putString("device_id", App.device_id);
-//                params.putString("exception", "MA17" + e.toString());
-//                mFirebaseAnalytics.logEvent("app_param_error", params);
+                Bundle params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "MA17" + e);
+                LogManager.logEvent(params);
             }
-
-
         }
     }
 
     @Override
     public void onDestroy() {
-
         super.onDestroy();
     }
 
@@ -982,29 +890,22 @@ public class MainActivity extends AppCompatActivity implements VpnStatus.ByteCou
         super.finish();
     }
 
-
     @Override
     public void updateState(final String state, String logmessage, int localizedResId, ConnectionStatus level) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (state.equals("CONNECTED")) {
-                    App.isStart = true;
-                    App.connection_status = 2;
+        runOnUiThread(() -> {
+            if (state.equals("CONNECTED")) {
+                App.isStart = true;
+                App.connection_status = 2;
 
-                    Handler handlerData = new Handler();
-                    handlerData.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            startAnimation(MainActivity.this, R.id.la_animation, R.anim.fade_in_1000, true);
-                            la_animation.cancelAnimation();
-                            la_animation.setAnimation(R.raw.ninjasecure);
-                            la_animation.playAnimation();
-                        }
-                    }, 1000);
+                Handler handlerData = new Handler();
+                handlerData.postDelayed(() -> {
+                    startAnimation(MainActivity.this, R.id.la_animation, R.anim.fade_in_1000, true);
+                    la_animation.cancelAnimation();
+                    la_animation.setAnimation(R.raw.ninjasecure);
+                    la_animation.playAnimation();
+                }, 1000);
 
-                    EnableConnectButton = true;
-                }
+                EnableConnectButton = true;
             }
         });
     }
@@ -1018,22 +919,17 @@ public class MainActivity extends AppCompatActivity implements VpnStatus.ByteCou
     @Override
     public void updateByteCount(long ins, long outs, long diffIns, long diffOuts) {
         final long Total = ins + outs;
-
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-
-                // size
-                if (Total < 1000) {
-                    tv_data_text.setText("صفر کیلوبایت");
-                    tv_data_name.setText("استفاده شده");
-                } else if ((Total >= 1000) && (Total <= 1000_000)) {
-                    tv_data_text.setText((Total / 1000) + "کیلوبایت");
-                    tv_data_name.setText("استفاده شده");
-                } else {
-                    tv_data_text.setText((Total / 1000_000) + "مگابایت");
-                    tv_data_name.setText("استفاده شده");
-                }
+        runOnUiThread(() -> {
+            // size
+            if (Total < 1000) {
+                tv_data_text.setText(default_byte_txt);
+                tv_data_name.setText(update_count_txt);
+            } else if (Total <= 1000_000) {
+                tv_data_text.setText((Total / 1000) + KB);
+                tv_data_name.setText(update_count_txt);
+            } else {
+                tv_data_text.setText((Total / 1000_000) + MB);
+                tv_data_name.setText(update_count_txt);
             }
         });
     }

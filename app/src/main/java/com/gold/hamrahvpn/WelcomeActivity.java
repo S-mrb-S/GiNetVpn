@@ -1,9 +1,16 @@
 package com.gold.hamrahvpn;
 
+import static com.gold.hamrahvpn.Data.RobotoBold;
+import static com.gold.hamrahvpn.Data.RobotoMedium;
+import static com.gold.hamrahvpn.Data.disconnected;
+import static com.gold.hamrahvpn.Data.get_details_from_file;
+import static com.gold.hamrahvpn.Data.get_info_from_app;
+import static com.gold.hamrahvpn.Data.isAppDetails;
+import static com.gold.hamrahvpn.Data.isConnectionDetails;
+import static com.gold.hamrahvpn.MainActivity.ENCRYPT_DATA;
+
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
-import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -17,26 +24,30 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.gold.hamrahvpn.openvpn.EncryptData;
+import com.gold.hamrahvpn.util.LogManager;
+import com.gold.hamrahvpn.util.MmkvManager;
+import com.tencent.mmkv.MMKV;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.Random;
 
+import de.blinkt.openvpn.core.App;
+
 
 public class WelcomeActivity extends AppCompatActivity {
     TextView tv_welcome_status, tv_welcome_app;
     String StringGetAppURL, StringGetConnectionURL, AppDetails, FileDetails;
-    SharedPreferences SharedAppDetails;
+    MMKV appAppDetailsStorage = MmkvManager.getADStorage();
+    MMKV connectionStorage = MmkvManager.getConnectionStorage();
+    MMKV appValStorage = MmkvManager.getAppValStorage();
 //    TextView tv_welcome_title, tv_welcome_description, tv_welcome_size, tv_welcome_version;
 
     int Random;
-//    private FirebaseAnalytics mFirebaseAnalytics;
+//    private FirebaseAnalytics LogManager;
 
     @Override
     public void onBackPressed() {
@@ -48,15 +59,11 @@ public class WelcomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_welcome);
 
-//        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
+//        LogManager = FirebaseAnalytics.getInstance(this);
 
         StringGetAppURL = "https://raw.githubusercontent.com/gayanvoice/android-vpn-client-ics-openvpn/images/appdetails.json";
         StringGetConnectionURL = "https://raw.githubusercontent.com/gayanvoice/android-vpn-client-ics-openvpn/images/filedetails.json";
         //StringGetConnectionURL = "https://gayankuruppu.github.io/buzz/connection.html";
-
-        Typeface RobotoMedium = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Medium.ttf");
-//        Typeface RobotoRegular = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Regular.ttf");
-        Typeface RobotoBold = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Bold.ttf");
 
         tv_welcome_status = findViewById(R.id.tv_welcome_status);
         tv_welcome_app = findViewById(R.id.tv_welcome_app);
@@ -70,16 +77,9 @@ public class WelcomeActivity extends AppCompatActivity {
 //        tv_welcome_size.setTypeface(RobotoMedium);
 //        tv_welcome_version.setTypeface(RobotoMedium);
 
-
         startAnimation(WelcomeActivity.this, R.id.ll_welcome_loading, R.anim.slide_up_800, true);
         Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                startAnimation(WelcomeActivity.this, R.id.ll_welcome_details, R.anim.slide_up_800, true);
-            }
-        }, 1000);
-
+        handler.postDelayed(() -> startAnimation(WelcomeActivity.this, R.id.ll_welcome_details, R.anim.slide_up_800, true), 1000);
 
         tv_welcome_status.setTypeface(RobotoMedium);
         tv_welcome_app.setTypeface(RobotoBold);
@@ -101,7 +101,7 @@ public class WelcomeActivity extends AppCompatActivity {
 //                    Bundle params = new Bundle();
 //                    params.putString("device_id", App.device_id);
 //                    params.putString("click", "play");
-//                    mFirebaseAnalytics.logEvent("app_param_click", params);
+//                    LogManager.logEvent("app_param_click", params);
 //
 //                    Intent intent = new Intent(Intent.ACTION_VIEW);
 //                    intent.setData(Uri.parse("market://details?id=com.gold.hamrahvpn"));
@@ -114,247 +114,201 @@ public class WelcomeActivity extends AppCompatActivity {
 //                } catch (Exception e) {
 ////                    Bundle params = new Bundle();
 ////                    params.putString("device_id", App.device_id);
-////                    params.putString("exception", "WA1" + e.toString());
-////                    mFirebaseAnalytics.logEvent("app_param_error", params);
+////                    params.putString("exception", "WA1" + e);
+////                    LogManager.logEvent(params);
 //                }
 //            }
 //
 //        });
 
-        btn_welcome_later.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                finish();
-                overridePendingTransition(R.anim.anim_slide_in_right, R.anim.anim_slide_out_left);
-
-            }
-
+        btn_welcome_later.setOnClickListener(view -> {
+            finish();
+            overridePendingTransition(R.anim.anim_slide_in_right, R.anim.anim_slide_out_left);
         });
 
         if (!Data.isConnectionDetails) {
             if (!Data.isAppDetails) {
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        getAppDetails();
-                    }
-                }, 2000);
+                handler.postDelayed(this::getAppDetails, 2000);
             }
         }
 
     }
 
     void getAppDetails() {
-        tv_welcome_status.setText("دریافت اطلاعات برنامه");
+        tv_welcome_status.setText(get_info_from_app);
         RequestQueue queue = Volley.newRequestQueue(WelcomeActivity.this);
         queue.getCache().clear();
         StringRequest stringRequest = new StringRequest(Request.Method.GET, StringGetAppURL,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String Response) {
-                        Log.e("Response", Response);
-                        AppDetails = Response;
-                        Data.isAppDetails = true;
-                    }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-//                Bundle params = new Bundle();
-//                params.putString("device_id", App.device_id);
-//                params.putString("exception", "WA2" + error.toString());
-//                mFirebaseAnalytics.logEvent("app_param_error", params);
+                Response -> {
+                    Log.e("Response", Response);
+                    AppDetails = Response;
+                    Data.isAppDetails = true;
+                }, error -> {
+            Bundle params = new Bundle();
+            params.putString("device_id", App.device_id);
+            params.putString("exception", "WA2" + error.toString());
+            LogManager.logEvent(params);
 
-                Data.isAppDetails = false;
-            }
+            Data.isAppDetails = false;
         });
 
         queue.add(stringRequest);
-        queue.addRequestFinishedListener(new RequestQueue.RequestFinishedListener<String>() {
-            @Override
-            public void onRequestFinished(Request<String> request) {
-                if (Data.isAppDetails) {
-                    getFileDetails();
-                } else {
-                    tv_welcome_status.setText("اتصال قطع شد");
-                }
+        queue.addRequestFinishedListener((RequestQueue.RequestFinishedListener<String>) request -> {
+            if (isAppDetails) {
+                getFileDetails();
+            } else {
+                tv_welcome_status.setText(disconnected);
             }
         });
     }
 
     void getFileDetails() {
-        tv_welcome_status.setText("در حال دریافت اطلاعات اتصال");
+        tv_welcome_status.setText(get_details_from_file);
         RequestQueue queue = Volley.newRequestQueue(WelcomeActivity.this);
         queue.getCache().clear();
         StringRequest stringRequest = new StringRequest(Request.Method.GET, StringGetConnectionURL,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String Response) {
-                        FileDetails = Response;
-                        Data.isConnectionDetails = true;
-                    }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-//                Bundle params = new Bundle();
-//                params.putString("device_id", App.device_id);
-//                params.putString("exception", "WA3" + error.toString());
-//                mFirebaseAnalytics.logEvent("app_param_error", params);
+                Response -> {
+                    FileDetails = Response;
+                    Data.isConnectionDetails = true;
+                }, error -> {
+            Bundle params = new Bundle();
+            params.putString("device_id", App.device_id);
+            params.putString("exception", "WA3" + error.toString());
+            LogManager.logEvent(params);
 
-                Data.isConnectionDetails = false;
-            }
+            Data.isConnectionDetails = false;
         });
         queue.add(stringRequest);
-        queue.addRequestFinishedListener(new RequestQueue.RequestFinishedListener<String>() {
-            @Override
-            public void onRequestFinished(Request<String> request) {
+        queue.addRequestFinishedListener((RequestQueue.RequestFinishedListener<String>) request -> {
 
-                final int min = 0;
-                final int max = 4;
-                Random = new Random().nextInt((max - min) + 1) + min;
+            final int min = 0;
+            final int max = 4;
+            Random = new Random().nextInt((max - min) + 1) + min;
 
-                String Ads = "NULL", cuVersion = "NULL", upVersion = "NULL", upTitle = "NULL", upDescription = "NULL", upSize = "NULL";
-                String ID = "NULL", FileID = "NULL", File = "NULL", City = "NULL", Country = "NULL", Image = "NULL",
-                        IP = "NULL", Active = "NULL", Signal = "NULL";
-                String BlockedApps = "NULL";
+            String Ads = "NULL", cuVersion = "NULL", upVersion = "NULL", upTitle = "NULL", upDescription = "NULL", upSize = "NULL";
+            String ID = "NULL", FileID = "NULL", File = "NULL", City = "NULL", Country = "NULL", Image = "NULL",
+                    IP = "NULL", Active = "NULL", Signal = "NULL";
+//                String BlockedApps = "NULL";
 
-                try {
-                    JSONObject jsonResponse = new JSONObject(AppDetails);
-                    Ads = jsonResponse.getString("ads");
-                } catch (Exception e) {
-//                    Bundle params = new Bundle();
-//                    params.putString("device_id", App.device_id);
-//                    params.putString("exception", "WA4" + e.toString());
-//                    mFirebaseAnalytics.logEvent("app_param_error", params);
+            try {
+                JSONObject jsonResponse = new JSONObject(AppDetails);
+                Ads = jsonResponse.getString("ads");
+            } catch (Exception e) {
+                Bundle params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "WA4" + e);
+                LogManager.logEvent(params);
+            }
+
+            try {
+                JSONObject jsonResponse = new JSONObject(AppDetails);
+                JSONArray jsonArray = jsonResponse.getJSONArray("update");
+                JSONObject jsonObject = jsonArray.getJSONObject(0);
+                upVersion = jsonObject.getString("version");
+                upTitle = jsonObject.getString("title");
+                upDescription = jsonObject.getString("description");
+                upSize = jsonObject.getString("size");
+            } catch (Exception e) {
+                Bundle params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "WA5" + e);
+                LogManager.logEvent(params);
+            }
+
+            try {
+                JSONObject json_response = new JSONObject(AppDetails);
+                JSONArray jsonArray = json_response.getJSONArray("free");
+                JSONObject json_object = jsonArray.getJSONObject(Random);
+                ID = json_object.getString("id");
+                FileID = json_object.getString("file");
+                City = json_object.getString("city");
+                Country = json_object.getString("country");
+                Image = json_object.getString("image");
+                IP = json_object.getString("ip");
+                Active = json_object.getString("active");
+                Signal = json_object.getString("signal");
+            } catch (Exception e) {
+                Bundle params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "WA5" + e);
+                LogManager.logEvent(params);
+            }
+
+            try {
+                JSONObject json_response = new JSONObject(FileDetails);
+                JSONArray jsonArray = json_response.getJSONArray("ovpn_file");
+                JSONObject json_object = jsonArray.getJSONObject(Integer.parseInt(FileID));
+                FileID = json_object.getString("id");
+                File = json_object.getString("file");
+            } catch (Exception e) {
+                Bundle params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "WA6" + e);
+                LogManager.logEvent(params);
+            }
+
+            // save details
+            try {
+                PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+                cuVersion = pInfo.versionName;
+                if (cuVersion.isEmpty()) {
+                    cuVersion = "0.0.0";
                 }
+                appAppDetailsStorage.putString("ads", Ads);
+                appAppDetailsStorage.putString("up_title", upTitle);
+                appAppDetailsStorage.putString("up_description", upDescription);
+                appAppDetailsStorage.putString("up_size", upSize);
+                appAppDetailsStorage.putString("up_version", upVersion);
+                appAppDetailsStorage.putString("cu_version", cuVersion);
+            } catch (Exception e) {
+                Bundle params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "WA7" + e);
+                LogManager.logEvent(params);
+            }
+            try {
+                connectionStorage.putString("id", ID);
+                connectionStorage.putString("file_id", FileID);
+                connectionStorage.putString("file", ENCRYPT_DATA.encrypt(File));
+                connectionStorage.putString("city", City);
+                connectionStorage.putString("country", Country);
+                connectionStorage.putString("image", Image);
+                connectionStorage.putString("ip", IP);
+                connectionStorage.putString("active", Active);
+                connectionStorage.putString("signal", Signal);
+            } catch (Exception e) {
+                Bundle params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "WA8" + e);
+                LogManager.logEvent(params);
+            }
 
-                try {
-                    JSONObject jsonResponse = new JSONObject(AppDetails);
-                    JSONArray jsonArray = jsonResponse.getJSONArray("update");
-                    JSONObject jsonObject = jsonArray.getJSONObject(0);
-                    upVersion = jsonObject.getString("version");
-                    upTitle = jsonObject.getString("title");
-                    upDescription = jsonObject.getString("description");
-                    upSize = jsonObject.getString("size");
-                } catch (Exception e) {
-//                    Bundle params = new Bundle();
-//                    params.putString("device_id", App.device_id);
-//                    params.putString("exception", "WA5" + e.toString());
-//                    mFirebaseAnalytics.logEvent("app_param_error", params);
-                }
-
-                try {
-                    JSONObject json_response = new JSONObject(AppDetails);
-                    JSONArray jsonArray = json_response.getJSONArray("free");
-                    JSONObject json_object = jsonArray.getJSONObject(Random);
-                    ID = json_object.getString("id");
-                    FileID = json_object.getString("file");
-                    City = json_object.getString("city");
-                    Country = json_object.getString("country");
-                    Image = json_object.getString("image");
-                    IP = json_object.getString("ip");
-                    Active = json_object.getString("active");
-                    Signal = json_object.getString("signal");
-                } catch (Exception e) {
-//                    Bundle params = new Bundle();
-//                    params.putString("device_id", App.device_id);
-//                    params.putString("exception", "WA5" + e.toString());
-//                    mFirebaseAnalytics.logEvent("app_param_error", params);
-                }
-
-                try {
-                    JSONObject json_response = new JSONObject(FileDetails);
-                    JSONArray jsonArray = json_response.getJSONArray("ovpn_file");
-                    JSONObject json_object = jsonArray.getJSONObject(Integer.valueOf(FileID));
-                    FileID = json_object.getString("id");
-                    File = json_object.getString("file");
-                } catch (Exception e) {
-//                    Bundle params = new Bundle();
-//                    params.putString("device_id", App.device_id);
-//                    params.putString("exception", "WA6" + e.toString());
-//                    mFirebaseAnalytics.logEvent("app_param_error", params);
-                }
-
-
-                // save details
-                EncryptData En = new EncryptData();
-                try {
-                    PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-                    cuVersion = pInfo.versionName;
-                    if (cuVersion.isEmpty()) {
-                        cuVersion = "0.0.0";
-                    }
-
-                    SharedAppDetails = getSharedPreferences("app_details", 0);
-                    SharedPreferences.Editor Editor = SharedAppDetails.edit();
-                    Editor.putString("ads", Ads);
-                    Editor.putString("up_title", upTitle);
-                    Editor.putString("up_description", upDescription);
-                    Editor.putString("up_size", upSize);
-                    Editor.putString("up_version", upVersion);
-                    Editor.putString("cu_version", cuVersion);
-                    Editor.apply();
-                } catch (Exception e) {
-//                    Bundle params = new Bundle();
-//                    params.putString("device_id", App.device_id);
-//                    params.putString("exception", "WA7" + e.toString());
-//                    mFirebaseAnalytics.logEvent("app_param_error", params);
-                }
-
-                try {
-                    SharedAppDetails = getSharedPreferences("connection_data", 0);
-                    SharedPreferences.Editor Editor = SharedAppDetails.edit();
-                    Editor.putString("id", ID);
-                    Editor.putString("file_id", FileID);
-                    Editor.putString("file", En.encrypt(File));
-                    Editor.putString("city", City);
-                    Editor.putString("country", Country);
-                    Editor.putString("image", Image);
-                    Editor.putString("ip", IP);
-                    Editor.putString("active", Active);
-                    Editor.putString("signal", Signal);
-                    Editor.apply();
-                } catch (Exception e) {
-//                    Bundle params = new Bundle();
-//                    params.putString("device_id", App.device_id);
-//                    params.putString("exception", "WA8" + e.toString());
-//                    mFirebaseAnalytics.logEvent("app_param_error", params);
-                }
-
-                try {
-                    SharedAppDetails = getSharedPreferences("app_values", 0);
-                    SharedPreferences.Editor Editor = SharedAppDetails.edit();
-                    Editor.putString("app_details", En.encrypt(AppDetails));
-                    Editor.putString("file_details", En.encrypt(FileDetails));
-                    Editor.apply();
-                } catch (Exception e) {
-//                    Bundle params = new Bundle();
-//                    params.putString("device_id", App.device_id);
-//                    params.putString("exception", "WA9" + e.toString());
-//                    mFirebaseAnalytics.logEvent("app_param_error", params);
-                }
+            try {
+                appValStorage.putString("app_details", ENCRYPT_DATA.encrypt(AppDetails));
+                appValStorage.putString("file_details", ENCRYPT_DATA.encrypt(FileDetails));
+            } catch (Exception e) {
+                Bundle params = new Bundle();
+                params.putString("device_id", App.device_id);
+                params.putString("exception", "WA9" + e);
+                LogManager.logEvent(params);
+            }
 
 //                tv_welcome_title.setText(upTitle);
 //                tv_welcome_description.setText(upDescription);
 //                tv_welcome_size.setText(upSize);
 //                tv_welcome_version.setText(upVersion);
 
-                if (Data.isConnectionDetails) {
-                    if (cuVersion.equals(upVersion)) {
-                        finish();
-                        overridePendingTransition(R.anim.anim_slide_in_right, R.anim.anim_slide_out_left);
-                    } else {
-                        startAnimation(WelcomeActivity.this, R.id.ll_welcome_loading, R.anim.fade_out_500, false);
-                        Handler handlerData = new Handler();
-                        handlerData.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                startAnimation(WelcomeActivity.this, R.id.ll_update_details, R.anim.slide_up_800, true);
-                            }
-                        }, 1000);
-                    }
+            if (isConnectionDetails) {
+                if (cuVersion.equals(upVersion)) {
+                    finish();
+                    overridePendingTransition(R.anim.anim_slide_in_right, R.anim.anim_slide_out_left);
                 } else {
-                    tv_welcome_status.setText("اتصال قطع شد");
+                    startAnimation(WelcomeActivity.this, R.id.ll_welcome_loading, R.anim.fade_out_500, false);
+                    Handler handlerData = new Handler();
+                    handlerData.postDelayed(() -> startAnimation(WelcomeActivity.this, R.id.ll_update_details, R.anim.slide_up_800, true), 1000);
                 }
+            } else {
+                tv_welcome_status.setText(disconnected);
             }
         });
     }
