@@ -18,5 +18,5 @@
     <dimen name="lo_12dpGrid">12dp</dimen>
     <dimen name="lo_16dpGrid">16dp</dimen>
     <dimen name="lo_20dpGrid">20dp</dimen>
-    <dimen name="lo_24dpGrid">44dp</dimen>
+    <dimen name="lo_24dpGrid">55dp</dimen>
 </resources>

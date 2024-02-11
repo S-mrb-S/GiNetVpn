@@ -49,7 +49,6 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.ViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-
         try {
             final OpenVpnServerList OpenVpnServerList = dataSet.get(position);
             // openvpn serverlist
@@ -78,7 +77,7 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.ViewHolder> {
 
     @Deprecated
     public void add(List<OpenVpnServerList> dataAdd, int position) {
-        final OpenVpnServerList OpenVpnServerList = dataAdd.get(position);
+//        final OpenVpnServerList OpenVpnServerList = dataAdd.get(position);
 //            dataAdd.add(position, text);
 //        final ServerListItem ServerListItem = dataSet.get(position);
 //        holderHelper.setItemHolder(ServerListItem, holder);

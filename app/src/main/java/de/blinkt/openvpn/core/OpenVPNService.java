@@ -4,13 +4,13 @@
  */
 package de.blinkt.openvpn.core;
 
-import static com.gold.hamrahvpn.Data.LongDataUsage;
-import static com.gold.hamrahvpn.Data.MONTH;
-import static com.gold.hamrahvpn.Data.PREFUSAGEStorage;
-import static com.gold.hamrahvpn.Data.TODAY;
-import static com.gold.hamrahvpn.Data.WEEK;
-import static com.gold.hamrahvpn.Data.YEAR;
-import static com.gold.hamrahvpn.Data.connectionStorage;
+import static com.gold.hamrahvpn.util.Data.LongDataUsage;
+import static com.gold.hamrahvpn.util.Data.MONTH;
+import static com.gold.hamrahvpn.util.Data.PREFUSAGEStorage;
+import static com.gold.hamrahvpn.util.Data.TODAY;
+import static com.gold.hamrahvpn.util.Data.WEEK;
+import static com.gold.hamrahvpn.util.Data.YEAR;
+import static com.gold.hamrahvpn.util.Data.connectionStorage;
 import static de.blinkt.openvpn.core.ConnectionStatus.LEVEL_CONNECTED;
 import static de.blinkt.openvpn.core.ConnectionStatus.LEVEL_WAITING_FOR_USER_INPUT;
 import static de.blinkt.openvpn.core.NetworkSpace.ipAddress;
@@ -50,9 +50,9 @@ import android.widget.Toast;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 
-import com.gold.hamrahvpn.Data;
-import com.gold.hamrahvpn.MainActivity;
 import com.gold.hamrahvpn.R;
+import com.gold.hamrahvpn.ui.MainActivity;
+import com.gold.hamrahvpn.util.Data;
 import com.gold.hamrahvpn.util.LogManager;
 
 import java.io.IOException;

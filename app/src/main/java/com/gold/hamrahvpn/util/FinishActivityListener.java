@@ -1,5 +1,5 @@
 package com.gold.hamrahvpn.util;
 
 public interface FinishActivityListener {
-    void finishActivity();
+    void finishActivity(Boolean finishWithResetList);
 }

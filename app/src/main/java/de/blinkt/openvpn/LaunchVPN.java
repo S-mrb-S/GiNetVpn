@@ -28,6 +28,7 @@ import android.view.View;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.gold.hamrahvpn.R;
 
@@ -251,8 +252,10 @@ public class LaunchVPN extends Activity {
         int vpnok = mSelectedProfile.checkProfile(this);
         if (vpnok != R.string.no_error_found) {
             showConfigErrorDialog(vpnok);
+            Toast.makeText(this, "Error found in OpenVpn connection..", Toast.LENGTH_SHORT).show();
             return;
         }
+        Toast.makeText(this, "OpenVpn Start..", Toast.LENGTH_SHORT).show();
         Intent intent = VpnService.prepare(this);
         // Check if we want to fix /dev/tun
         SharedPreferences prefs = Preferences.getDefaultSharedPreferences(this);

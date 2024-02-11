@@ -1,11 +1,11 @@
 package com.gold.hamrahvpn.util;
 
-import static com.gold.hamrahvpn.Data.ID_PREF_USAGE;
-import static com.gold.hamrahvpn.Data.ID_app_details;
-import static com.gold.hamrahvpn.Data.ID_app_values;
-import static com.gold.hamrahvpn.Data.ID_connection_data;
-import static com.gold.hamrahvpn.Data.ID_log_data;
-import static com.gold.hamrahvpn.Data.ID_settings_data;
+import static com.gold.hamrahvpn.util.Data.ID_PREF_USAGE;
+import static com.gold.hamrahvpn.util.Data.ID_app_details;
+import static com.gold.hamrahvpn.util.Data.ID_app_values;
+import static com.gold.hamrahvpn.util.Data.ID_connection_data;
+import static com.gold.hamrahvpn.util.Data.ID_log_data;
+import static com.gold.hamrahvpn.util.Data.ID_settings_data;
 
 import com.tencent.mmkv.MMKV;
 

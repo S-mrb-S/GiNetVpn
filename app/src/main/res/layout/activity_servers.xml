@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/constraintLayoutServers"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorLightBackground"
     android:orientation="vertical"
-    tools:context=".MainActivity">
+    tools:context=".ui.MainActivity">
 
+    <!--HEADER-->
     <LinearLayout
         android:id="@+id/linearLayoutTitleBar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:orientation="horizontal">
 
         <LinearLayout
@@ -31,13 +32,15 @@
                 android:id="@+id/iv_servers_go_back"
                 android:layout_width="34dp"
                 android:layout_height="34dp"
-                android:background="@drawable/ic_go_back" />
+                android:background="@drawable/ic_go_back"
+                android:contentDescription="@string/todo" />
         </LinearLayout>
 
         <View
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+            tools:ignore="NestedWeights" />
 
         <TextView
             android:id="@+id/tv_servers_title"
@@ -47,9 +50,8 @@
             android:layout_marginTop="16dp"
             android:layout_marginBottom="@dimen/lo_16dpGrid"
             android:gravity="center"
-            android:text="Servers"
+            android:text="@string/title_server_activity"
             android:textSize="18sp" />
-
 
         <View
             android:layout_width="0dp"
@@ -72,19 +74,19 @@
                 android:id="@+id/iv_server_refresh"
                 android:layout_width="34dp"
                 android:layout_height="34dp"
-                android:background="@drawable/ic_servers_cloud" />
+                android:background="@drawable/ic_servers_cloud"
+                android:backgroundTint="@color/colorRed"
+                android:contentDescription="@string/todo" />
         </LinearLayout>
-
-
     </LinearLayout>
-
-
+    <!--BODY-->
     <LinearLayout
         android:id="@+id/ll_server_list"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="10"
         android:orientation="vertical">
-
+        <!--light-->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/ls_servers_list_light"
             android:layout_width="match_parent"
@@ -94,10 +96,8 @@
             android:footerDividersEnabled="true"
             android:headerDividersEnabled="true"
             android:scrollbars="vertical"
-            android:visibility="gone">
-
-        </androidx.recyclerview.widget.RecyclerView>
-
+            android:visibility="gone" />
+        <!--dark-->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/ls_servers_list_dark"
             android:layout_width="match_parent"
@@ -108,45 +108,21 @@
             android:headerDividersEnabled="true"
             android:scrollbars="vertical"
             android:visibility="gone" />
-
     </LinearLayout>
-
+    <!--FOOTER-->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="70dp"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:background="@drawable/layout_round"
         android:orientation="vertical">
-
-        <com.skydoves.powerspinner.PowerSpinnerView
-            android:id="@+id/powerSpinner"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:background="@color/colorBlue"
-            android:gravity="center"
-            android:hint="V2ray Fast"
-            android:textColor="@color/colorWhite"
-            android:textColorHint="@color/colorWhite"
-            android:textSize="14.5sp"
-            app:spinner_arrow_gravity="end"
-            app:spinner_arrow_padding="8dp"
-            app:spinner_divider_color="@color/colorLightGreen"
-            app:spinner_divider_show="true"
-            app:spinner_divider_size="0.4dp"
-            app:spinner_item_array="@array/spinner_items"
-            app:spinner_item_height="66dp"
-            app:spinner_popup_animation="fade"
-            app:spinner_popup_background="@color/colorBlue"
-            app:spinner_popup_elevation="14dp" />
 
         <TextView
             android:id="@+id/textViewCenter"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_centerInParent="false"
             android:gravity="center"
-            android:text="test" />
-
+            android:text="@string/none" />
     </LinearLayout>
 
     <TextView
@@ -155,7 +131,6 @@
         android:layout_height="match_parent"
         android:layout_gravity="center"
         android:gravity="center"
-        android:text="لیستی برای نمایش وجود ندارد"
+        android:text="@string/no_itemlist_found"
         android:visibility="gone" />
-
 </LinearLayout>

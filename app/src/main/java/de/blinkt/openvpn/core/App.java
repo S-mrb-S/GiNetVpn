@@ -4,7 +4,7 @@
  */
 package de.blinkt.openvpn.core;
 
-import static com.gold.hamrahvpn.Data.settingsStorage;
+import static com.gold.hamrahvpn.util.Data.settingsStorage;
 
 import android.app.Application;
 import android.app.NotificationChannel;

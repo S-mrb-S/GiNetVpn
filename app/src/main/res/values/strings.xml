@@ -100,7 +100,8 @@
     <string name="your_app_version">App Version </string>
     <string name="latest_update">Latest update </string>
 
-
+    <string name="nav_open">Open</string>
+    <string name="nav_close">Close</string>
     <string name="state_assign_ip">Assigning IP addresses</string>
     <string name="state_add_routes">Adding routes</string>
     <string name="state_connected">Connected</string>
@@ -171,4 +172,38 @@
 
 
     <string name="string_of_two_number">%02d</string>
+    <string name="title_activity_test_drawer">TestDrawer</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="menu_home">Home</string>
+    <string name="menu_gallery">Gallery</string>
+    <string name="menu_slideshow">Slideshow</string>
+    <string name="title_activity_main2">MainActivity2</string>
+    <string name="loading_default">درحال اجرا</string>
+    <string name="button_login">وارد شوید</string>
+    <string name="password_hint">پسورد</string>
+    <string name="username_hint">یوزرنیم</string>
+    <string name="split_tun_drawer">اسپلیت تونل</string>
+    <string name="setting_drawer">تنظیمات</string>
+    <string name="about_me_drawer">درباره ی ما</string>
+    <string name="log_manage_drawer">گزارشات</string>
+    <string name="feedback_drawer">بازخورد</string>
+    <string name="logout_drawer">خروج از حساب</string>
+    <string name="none">None</string>
+    <string name="todo">TODO</string>
+    <string name="no_itemlist_found">لیستی برای نمایش وجود ندارد</string>
+    <string name="title_server_activity">Servers</string>
+    <string name="default_text_today">امروز</string>
+    <string name="default_text_footer_end">استفاده شده</string>
+    <string name="config_type_button_text">نوع اتصال</string>
+    <string name="default_connect_button_text">وصل شدن</string>
+    <string name="default_time_popup">00:00:00</string>
+    <string name="islogin_text">ورود دوباره</string>
+    <string name="left_islogin_test">کلیک کنید</string>
+    <string name="right_islogin_text">اول روی</string>
 </resources>
